@@ -4,6 +4,12 @@ const Etudiant = require('../models/Etudiant');
 const bcrypt = require('bcryptjs'); 
 const jwt = require('jsonwebtoken');
 
+
+
+
+router.get("/",(req,res)=>{
+    res.render("login",{message:""});
+})
 router.post('/', async (req, res) => {
     const { email, password } = req.body;
 
