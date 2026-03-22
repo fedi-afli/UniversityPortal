@@ -1,0 +1,94 @@
+<!-- === Modern Navbar with Avatar Dropdown === -->
+<nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16 items-center">
+
+      <!-- Logo -->
+      <a href="/" class="flex-shrink-0 flex items-center gap-3 text-xl font-bold text-white hover:opacity-80 transition">
+        <div class="bg-blue-600 p-2 rounded-lg">
+          <i class="fa-solid fa-graduation-cap text-white"></i>
+        </div>
+        CampusHub
+      </a>
+
+      <!-- Right side: Avatar + Dropdown -->
+      <div class="flex items-center gap-4">
+
+        <!-- Avatar button that opens dropdown -->
+        <div class="relative">
+          <button id="user-menu-button" class="flex items-center gap-3 focus:outline-none group">
+            <img class="h-10 w-10 rounded-full object-cover border-2 border-gray-600 group-hover:border-blue-500 transition"
+                 src="<%= etudiant.profilePicture || '/uploads/default-avatars/default.png' %>"
+                 alt="Profile">
+
+            <div class="hidden md:flex flex-col items-start">
+              <span class="text-sm font-medium text-white"><%= etudiant.firstName %> <%= etudiant.lastName %></span>
+              <span class="text-xs text-gray-400"><%= etudiant.email || 'Student' %></span>
+            </div>
+
+            <!-- Small chevron indicator -->
+            <i class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform group-hover:text-white"></i>
+          </button>
+
+          <!-- Dropdown menu -->
+          <div id="user-dropdown"
+               class="hidden absolute right-0 mt-3 w-64 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl py-2 z-50 transform opacity-0 scale-95 transition-all duration-200 origin-top-right">
+            
+            <!-- Header in dropdown (mobile only) -->
+            <div class="md:hidden px-4 py-3 border-b border-gray-700">
+              <p class="text-base font-medium text-white"><%= etudiant.firstName %> <%= etudiant.lastName %></p>
+              <p class="text-sm text-gray-400"><%= etudiant.email || 'Student' %></p>
+            </div>
+
+            <!-- Menu items -->
+            <a href="/profile" class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition">
+              <i class="fa-solid fa-user w-5 text-center"></i>
+              My Profile
+            </a>
+
+            <a href="/about" class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white transition">
+              <i class="fa-solid fa-info-circle w-5 text-center"></i>
+              About CampusHub
+            </a>
+
+            
+
+            <div class="border-t border-gray-700 my-2"></div>
+
+            <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-900/30 hover:text-red-300 transition">
+              <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
+              Sign Out
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- JavaScript to toggle dropdown -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const button = document.getElementById('user-menu-button');
+    const dropdown = document.getElementById('user-dropdown');
+
+    if (!button || !dropdown) return;
+
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('hidden');
+      dropdown.classList.toggle('opacity-0');
+      dropdown.classList.toggle('scale-95');
+      dropdown.classList.toggle('opacity-100');
+      dropdown.classList.toggle('scale-100');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden', 'opacity-0', 'scale-95');
+        dropdown.classList.remove('opacity-100', 'scale-100');
+      }
+    });
+  });
+</script>

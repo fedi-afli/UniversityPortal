@@ -9,11 +9,8 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendAttestationReadyEmail(etudiant) {
-  const email = etudiant.email_universitaire || etudiant.email_personnel;
-  if (!email) {
-    console.log(`Aucun email trouvé pour ${etudiant.nom}`);
-    return;
-  }
+  const email = etudiant.email || etudiant.email_universitaire;
+  if (!email) return console.log("No email found for student");
 
   const portalUrl = `http://localhost:${process.env.PORT || 5000}`;
 
@@ -22,24 +19,48 @@ async function sendAttestationReadyEmail(etudiant) {
     to: email,
     subject: '🎓 Votre attestation de présence est prête !',
     html: `
-      <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-        <h2 style="color: #2c3e50;">Bonjour ${etudiant.prenom} ${etudiant.nom},</h2>
-        <p>Nous vous informons que votre demande d'attestation de présence a été traitée et validée par notre système.</p>
-        <p>Votre document officiel (PDF) est maintenant disponible au téléchargement.</p>
-        <br>
-        <a href="${portalUrl}" style="background-color: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Accéder à mon portail pour télécharger</a>
-        <br><br><br>
-        <p>Cordialement,<br><strong>Le Secrétariat Général</strong><br>Faculté des Sciences de Bizerte</p>
-      </div>
+      <h2>Bonjour ${etudiant.firstName || etudiant.prenom} ${etudiant.lastName || etudiant.nom},</h2>
+      <p>Votre attestation de présence est disponible dans votre portail.</p>
+      <a href="${portalUrl}">Accéder au portail</a>
     `
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Email de notification envoyé avec succès à ${email}`);
-  } catch (error) {
-    console.error('Erreur lors de l\'envoi de l\'email :', error.message);
+    console.log(`Email envoyé à ${email}`);
+  } catch (err) {
+    console.error("Erreur envoi email succès:", err);
   }
 }
 
-module.exports = { sendAttestationReadyEmail };
+async function sendAttestationRejectedEmail(etudiant, reason) {
+  const email = etudiant.email || etudiant.email_universitaire;
+  if (!email) return console.log("No email found for student");
+
+  const portalUrl = `http://localhost:${process.env.PORT || 5000}`;
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: '❌ Demande d’attestation REFUSÉE',
+    html: `
+      <h2>Bonjour ${etudiant.firstName || etudiant.prenom} ${etudiant.lastName || etudiant.nom},</h2>
+      <p style="color: #c0392b;">Votre demande d'attestation de présence a été refusée.</p>
+      <p><strong>Raison :</strong> ${reason}</p>
+      <p>Contactez le secrétariat pour plus d'informations.</p>
+      <a href="${portalUrl}">Retour au portail</a>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Email de refus envoyé à ${email}`);
+  } catch (err) {
+    console.error("Erreur envoi email refus:", err);
+  }
+}
+
+module.exports = {
+  sendAttestationReadyEmail,
+  sendAttestationRejectedEmail
+};

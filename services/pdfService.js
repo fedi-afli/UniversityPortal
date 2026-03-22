@@ -29,16 +29,16 @@ async function generateAttestationPDF(request, etudiant, inscription) {
 
     const dateNaissance = etudiant.date_naissance ? new Date(etudiant.date_naissance).toLocaleDateString('fr-FR') : '...../......../........';
     const lieuNaissance = etudiant.lieu_naissance || '.............';
-    const formation = inscription.formation_code || '...........';
-    const anneeUniv = inscription.annee_universitaire || '........./..................';
+    const formation = inscription.programCode || '...........';
+    const anneeUniv = inscription.academicYear || '........./..................';
 
-    doc.text(`Nom : ${etudiant.nom.toUpperCase()}`, { indent: 30 });
+    doc.text(`Nom : ${etudiant.lastName.toUpperCase()}`, { indent: 30 });
     doc.moveDown(0.5);
-    doc.text(`Prénom: ${etudiant.prenom.charAt(0).toUpperCase() + etudiant.prenom.slice(1)}`, { indent: 30 });
+    doc.text(`Prénom: ${etudiant.firstName.charAt(0).toUpperCase() + etudiant.firstName.slice(1)}`, { indent: 30 });
     doc.moveDown(0.5);
     doc.text(`Né(e) le : ${dateNaissance}  à  ${lieuNaissance}`, { indent: 30 });
     doc.moveDown(0.5);
-    doc.text(`Titulaire de la carte d'identité nationale n°: ${etudiant.cin}`, { indent: 30 });
+    doc.text(`Titulaire de la carte d'identité nationale n°: ${etudiant.nationalId}`, { indent: 30 });
     doc.moveDown(0.5);
     doc.text(`Inscrit(e) en ${formation} pour l'année ${anneeUniv}`, { indent: 30 });
     
