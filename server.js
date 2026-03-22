@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');             
 const cookieParser = require('cookie-parser');
-const auth = require('./middleware/auth');
+const authMiddleware = require('./middleware/authMiddleware');
 const Etudiant = require('./models/Etudiant');
 const authRoutes = require('./routes/authRoutes');
 const attestationRoutes = require('./routes/attestationRoutes');
@@ -28,33 +28,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('public'));
 
 // Route principale : Portail ou Login
-app.get('/', async (req, res) => {
-    try {
-        // 1. On cherche le cookie de connexion
-        const token = req.cookies?.jwt;
-
-        // 2. Si aucun cookie n'est trouvé, on affiche simplement la page de login
-        if (!token) {
-            return res.render('login', { message: null });
-        }
-
-        // 3. Si un cookie existe, on le décode
-        const verified = jwt.verify(token, process.env.JWT_SECRET);
-        
-        // 4. On cherche l'étudiant dans la base
-        const etudiant = await Etudiant.findById(verified.id);
-        if (!etudiant) {
-            return res.render('login', { message: null });
-        }
-
-        // 5. TOUT EST BON ! L'étudiant est connecté, on affiche le portail
-        res.render('index', { etudiant: etudiant });
-
-    } catch (err) {
-        // Si le cookie est expiré, trafiqué ou invalide, on affiche le login
-        console.log("Token invalide ou expiré, retour au login.");
-        return res.render('login', { message: null });
-    }
+app.get('/', authMiddleware, (req, res) => {
+  
+     res.render('main', { user: req.user });
 });
 // Routes API et pages
 app.use('/api/auth', authRoutes);
