@@ -1,4 +1,4 @@
-const express = require('express');
+/* const express = require('express');
 const router = express.Router();
 const attestationController = require('../controllers/attestationController');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -12,4 +12,4 @@ router.get('/:id',authMiddleware, attestationController.getAttestationRequestByI
 router.get('/:id/download',authMiddleware, attestationController.downloadAttestationPDF);
 router.post('/',authMiddleware, attestationController.createAttestationRequest);
 
-module.exports = router;
+module.exports = router; */

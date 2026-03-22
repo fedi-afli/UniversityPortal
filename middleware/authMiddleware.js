@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
-const Etudiant = require('../models/Etudiant');
+const { Student } = require('../models/Roles'); // updated import
 
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.cookies?.jwt;
 
-    // ❌ No token → redirect
+    // ❌ No token → redirect to login
     if (!token) {
       return res.redirect('/signin');
     }
@@ -13,27 +13,26 @@ const authMiddleware = async (req, res, next) => {
     // 🔐 Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 🔍 Get user
-    const user = await Etudiant.findById(decoded.id);
+    // 🔍 Get user by ID
+    const student = await Student.findById(decoded.id);
 
-    if (!user) {
+    if (!student) {
       res.clearCookie('jwt');
       return res.redirect('/signin');
     }
 
     // 🚫 Blocked user
-    if (user.isBlocked) {
+    if (student.isBlocked) {
       res.clearCookie('jwt');
       return res.redirect('/signin');
     }
 
-    // ✅ OK
-    req.user = user;
+    // ✅ OK, attach user to request
+    req.user = student;
     next();
 
   } catch (err) {
-    console.log("Auth error:", err.message);
-
+    console.error("Auth error:", err.message);
     res.clearCookie('jwt');
     return res.redirect('/signin');
   }

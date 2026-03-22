@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+/* const mongoose = require('mongoose');
 
 const attestationSchema = new mongoose.Schema({
   etudiant:           { type: mongoose.Schema.Types.ObjectId, ref: 'Etudiant', required: true },
@@ -25,4 +25,4 @@ const attestationSchema = new mongoose.Schema({
 
 attestationSchema.index({ etudiant: 1, date_demande: -1 });
 
-module.exports = mongoose.model('AttestationRequest', attestationSchema);
+module.exports = mongoose.model('AttestationRequest', attestationSchema); */

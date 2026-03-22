@@ -1,4 +1,4 @@
-const Etudiant = require('../models/Etudiant');
+/* const Etudiant = require('../models/Roles');
 const Inscription = require('../models/Inscription');
 const Attendance = require('../models/Presence');
 const AttestationRequest = require('../models/AttestationRequest');
@@ -114,4 +114,4 @@ exports.getAttestationRequestById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+}; */
