@@ -6,14 +6,15 @@ const cors = require('cors');
 const path = require('path');             
 const cookieParser = require('cookie-parser');
 const authMiddleware = require('./middleware/authMiddleware');
-const Etudiant = require('./models/Etudiant');
+
 const authRoutes = require('./routes/authRoutes');
-const attestationRoutes = require('./routes/attestationRoutes');
+/* const attestationRoutes = require('./routes/attestationRoutes'); */
 const signupRoute = require('./routes/signup');
 const signinRoute = require('./routes/signin');
 const logoutRoute = require('./routes/logout');
 const passwordRoutes = require('./routes/password');  
-const verifyRoutes = require('./routes/verify');       
+const verifyRoutes = require('./routes/verify');     
+const absenceRoutes = require('./routes/absence');    
 
 const app = express();
 
@@ -29,7 +30,7 @@ app.use(express.static('public'));
 
 // Route principale : Portail ou Login
 app.get('/', authMiddleware, (req, res) => {
-  
+     console.log(req.user);
      res.render('main', { user: req.user });
 });
 // Routes API et pages
@@ -39,7 +40,8 @@ app.use('/signin', signinRoute);
 app.use('/logout', logoutRoute);
 app.use('/password', passwordRoutes);
 app.use('/verify', verifyRoutes);
-app.use('/api/attestations', attestationRoutes);
+app.use('/api/absence', absenceRoutes);
+/* app.use('/api/attestations', attestationRoutes); */
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI)

@@ -29,10 +29,7 @@ const formationSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  faculte: {
-    type: String,
-    default: 'FSB' 
-  },
+
   duree_annees: {
     type: Number,
     default: 3

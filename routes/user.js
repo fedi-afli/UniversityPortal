@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const Etudiant = require('../models/Etudiant'); 
+const Etudiant = require('../models/Roles'); 
 
 const auth = require('../middleware/auth');
 

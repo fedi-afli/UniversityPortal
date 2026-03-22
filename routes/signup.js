@@ -1,20 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const Etudiant = require('../models/Etudiant');
-const bcrypt = require('bcryptjs'); 
+const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { sendVerificationEmail } = require('./email');
-const multer = require('multer'); 
+const fs = require('fs');
 const path = require('path');
-const fs = require('fs'); 
+const multer = require('multer');
+const { Student } = require('../models/Roles');
+const Enrollment = require('../models/Enrollment'); // your enrollment model
+const { sendVerificationEmail } = require('./email');
 
-// --- MULTER CONFIGURATION (Gestion de la photo de profil) ---
+// --- MULTER CONFIGURATION ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, '../uploads/profile-pictures');
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
+        const uploadPath = path.join(__dirname, '..public/uploads/profile-pictures');
+        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
@@ -24,114 +23,106 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // Limite à 5MB
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Seules les images sont autorisées !'), false);
-        }
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Only images are allowed!'), false);
     }
 }).single('profilePicture');
 
-// Helper pour ne répondre qu'une seule fois
+// --- HELPERS ---
 const sendOnce = (callback) => {
-    try {
-        callback();
-    } catch (e) {
-        if (e.code !== 'ERR_HTTP_HEADERS_SENT') {
-            console.error('Error sending response:', e);
-        }
-    }
+    try { callback(); } 
+    catch (e) { if (e.code !== 'ERR_HTTP_HEADERS_SENT') console.error(e); }
 };
 
-// Nettoyage en cas d'erreur
 const deleteFile = (filePath) => {
-    fs.unlink(filePath, (err) => {
-        if (err && err.code !== 'ENOENT') console.error('Erreur suppression fichier:', err);
-    });
+    fs.unlink(filePath, (err) => { if (err && err.code !== 'ENOENT') console.error(err); });
 };
 
-// --- ROUTE D'INSCRIPTION ---
+// --- SIGNUP ROUTE ---
 router.post('/', upload, async (req, res) => {
     try {
-        // 1. On récupère les VRAIS champs du modèle Etudiant PFA
         const { cin, nom, prenom, email, password } = req.body;
 
-        // Validation de base
+        // Basic validation
         if (!cin || !nom || !prenom || !email || !password) {
             if (req.file) deleteFile(req.file.path);
-            return sendOnce(() => res.status(400).json({ message: 'Veuillez remplir tous les champs obligatoires (CIN, Nom, Prénom, Email, Mot de passe).' }));
+            return sendOnce(() => res.status(400).json({ message: 'Please fill all required fields.' }));
         }
 
-        // 2. Vérifier si l'étudiant existe déjà (par Email ou par CIN)
-        const existingUser = await Etudiant.findOne({ $or: [{ email: email }, { cin: cin }] });
-        if (existingUser) {
+        // Check for existing student account
+        const existingStudent = await Student.findOne({ $or: [{ email }, { nationalId: cin }] });
+        if (existingStudent) {
             if (req.file) deleteFile(req.file.path);
-            return sendOnce(() => res.status(400).json({ message: 'Un étudiant avec cet Email ou ce CIN existe déjà.' }));
+            return sendOnce(() => res.status(400).json({ message: 'An account with this CIN or email already exists.' }));
         }
 
-        // 3. Hashage du mot de passe
+        // Check if enrollment exists for this CIN
+        const enrollment = await Enrollment.findOne({ nationalId: cin });
+        if (!enrollment) {
+            if (req.file) deleteFile(req.file.path);
+            return sendOnce(() => res.status(400).json({ message: 'No university enrollment found for this CIN.' }));
+        }
+
+        // Ensure enrollment is not already linked to a student
+        if (enrollment.student) {
+            if (req.file) deleteFile(req.file.path);
+            return sendOnce(() => res.status(400).json({ message: 'This enrollment is already linked to a student account.' }));
+        }
+
+        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 4. Génération du token de vérification d'email
+        // --- VERIFICATION TOKEN ---
         const verificationToken = crypto.randomBytes(32).toString('hex');
 
-        // Définition de l'image de profil
+        // Profile picture
         const profilePicturePath = req.file 
             ? `/uploads/profile-pictures/${req.file.filename}` 
             : '/uploads/default-avatars/default.png';
 
-        // 5. Création de l'étudiant
-        const user = new Etudiant({
-            cin,
-            nom,
-            prenom,
+        // Create student account
+        const student = new Student({
+            firstName: nom,
+            lastName: prenom,
             email,
             password: hashedPassword,
-            verificationToken,
             profilePicture: profilePicturePath,
-            isVerified: false
+            isVerified: false,
+            nationalId: cin,
+            inscrption: enrollment._id,
+            verificationToken // ✅ store the token here
         });
 
-        await user.save();
+        await student.save();
 
-        // 6. Envoi de l'email de vérification
+        // Link enrollment to student
+        enrollment.student = student._id;
+        await enrollment.save();
+
+        // Send verification email
         const verifyURL = `${req.protocol}://${req.get('host')}/verify/${verificationToken}`;
         try {
             await sendVerificationEmail(email, verifyURL);
             return sendOnce(() => res.status(201).json({
-                message: 'Inscription réussie. Veuillez vérifier votre boîte email.',
+                message: 'Account created successfully. Please check your email to verify your account.',
                 profilePicture: profilePicturePath
             }));
         } catch (mailErr) {
-            console.error('❌ Echec envoi email de vérification:', mailErr);
-            // On nettoie la BDD si l'email n'a pas pu partir
-            try {
-                await Etudiant.deleteOne({ _id: user._id });
-            } catch (delErr) {
-                console.error('❌ Echec suppression utilisateur après erreur email:', delErr);
-            }
+            console.error('Email failed:', mailErr);
+            await Student.deleteOne({ _id: student._id });
             if (req.file) deleteFile(req.file.path);
-            return sendOnce(() => res.status(500).json({ message: "L'email de vérification n'a pas pu être envoyé. Veuillez réessayer." }));
+            return sendOnce(() => res.status(500).json({ message: 'Verification email could not be sent.' }));
         }
-        
+
     } catch (err) {
         if (req.file) deleteFile(req.file.path);
-
-        if (err instanceof multer.MulterError) {
-             return sendOnce(() => res.status(400).json({ message: `Erreur d'upload: ${err.message}` }));
-        }
-        
-        if (err.code === 11000) { 
-            return sendOnce(() => res.status(400).json({ message: 'Cet Email ou ce CIN est déjà utilisé.' }));
-        }
-        
-        console.error("❌ ERREUR SERVEUR CRITIQUE:", err); 
-        return sendOnce(() => res.status(500).json({ message: 'Erreur serveur interne' }));
+        console.error(err);
+        return sendOnce(() => res.status(500).json({ message: 'Internal server error.' }));
     }
 });
 
