@@ -2,8 +2,10 @@
 const mongoose = require('mongoose');
 
 const attestationSchema = new mongoose.Schema({
-  etudiant:           { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
-  inscription:        { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', required: true },
+
+  student:           { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  enrollment:        { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', required: true },
+
   annee_universitaire: { type: String, required: true },
   semestre:           { type: String, enum: ['S1', 'S2', 'Annual'], required: true },
   periode_debut:      { type: Date, required: true },
@@ -19,6 +21,8 @@ const attestationSchema = new mongoose.Schema({
   file_path:          { type: String }
 }, { timestamps: true });
 
-attestationSchema.index({ etudiant: 1, date_demande: -1 });
+
+attestationSchema.index({ student: 1, date_demande: -1 });
+
 
 module.exports = mongoose.model('AttestationRequest', attestationSchema);

@@ -14,7 +14,11 @@ const signinRoute = require('./routes/signin');
 const logoutRoute = require('./routes/logout');
 const passwordRoutes = require('./routes/password');  
 const verifyRoutes = require('./routes/verify');     
+<<<<<<< HEAD
 const absenceRoutes = require('./routes/absenceRoutes');    
+=======
+const absenceRoutes = require('./routes/absence');    
+>>>>>>> 519896e0f7c71299fc124add35955190f1b8426b
 
 const app = express();
 
@@ -29,7 +33,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static('public'));
 // Route principale : Portail ou Login
 app.get('/', authMiddleware, (req, res) => {
+<<<<<<< HEAD
       console.log(req.user)
+=======
+     console.log(req.user);
+>>>>>>> 519896e0f7c71299fc124add35955190f1b8426b
      res.render('main', { user: req.user });
 });
 // Routes API et pages

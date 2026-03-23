@@ -12,7 +12,9 @@ const { sendVerificationEmail } = require('./email');
 // --- MULTER CONFIGURATION ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
+
         const uploadPath = path.join(__dirname, '../public/uploads/profile-pictures');
+
         if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
     },

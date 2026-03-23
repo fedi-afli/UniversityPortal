@@ -19,8 +19,13 @@ async function sendAttestationReadyEmail(etudiant) {
     to: email,
     subject: '🎓 Votre attestation de présence est prête !',
     html: `
+<<<<<<< HEAD
       <h2>Bonjour ${etudiant.firstName || etudiant.prenom} ${etudiant.lastName || etudiant.nom},</h2>
       <p>Votre attestation de présence est disponible dans votre portail.</p>
+=======
+      <h2>Bonjour ${etudiant.firstName} ${etudiant.lastName},</h2>     
+     <p>Votre attestation de présence est disponible dans votre portail.</p>
+>>>>>>> 519896e0f7c71299fc124add35955190f1b8426b
       <a href="${portalUrl}">Accéder au portail</a>
     `
   };

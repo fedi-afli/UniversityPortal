@@ -135,8 +135,10 @@ exports.createAttestationRequest = async (req, res) => {
     // ───────────────────────────────────────────────────────────────
 
     const request = new AttestationRequest({
-      etudiant: etudiant._id,
-      inscription: inscription._id,
+
+      student: etudiant._id,
+      enrollment: inscription._id,
+
       annee_universitaire,
       semestre,
       periode_debut: startDate,
@@ -176,13 +178,24 @@ exports.downloadAttestationPDF = async (req, res) => {
     const { id } = req.params;
 
     const request = await AttestationRequest.findById(id)
-      .populate('etudiant', 'firstName lastName nationalId email');
+
+      .populate('student', 'firstName lastName nationalId email');
+
 
     if (!request) {
       return res.status(404).json({ success: false, error: 'Demande non trouvée' });
     }
 
-    if (request.etudiant._id.toString() !== req.user._id.toString()) {
+
+    if (!request.student) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Les données de l\'étudiant sont introuvables pour cette demande. Veuillez faire une nouvelle demande.' 
+      });
+    }
+
+    if (request.student._id.toString() !== req.user._id.toString()) {
+
       return res.status(403).json({ success: false, error: 'Accès non autorisé' });
     }
 
@@ -196,7 +209,9 @@ exports.downloadAttestationPDF = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Fichier PDF introuvable sur le serveur' });
     }
 
-    res.download(filePath, `attestation_${request.etudiant.nationalId || 'etudiant'}_${request._id}.pdf`);
+
+    res.download(filePath, `attestation_${request.student.nationalId || 'etudiant'}_${request._id}.pdf`);
+
 
   } catch (err) {
     console.error('Erreur lors du téléchargement du PDF :', err);
