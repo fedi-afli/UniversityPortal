@@ -35,11 +35,11 @@
                 
                 <div class="flex items-center gap-4">
                     <div class="hidden sm:flex flex-col items-end">
-                        <span class="text-sm font-medium text-white"><%= typeof etudiant !== 'undefined' ? etudiant.prenom + ' ' + etudiant.nom : 'Student Name' %></span>
-                        <span class="text-xs text-blue-400">ID: <%= typeof etudiant !== 'undefined' && etudiant.numero_inscription ? etudiant.numero_inscription : '12345678' %></span>
+                        <span class="text-sm font-medium text-white"><%= user && user.firstName && user.lastName? user.firstName + ' ' + user.lastName : 'Student Name' %></span>
+                        <span class="text-xs text-blue-400">ID: <%= user && user.nationalId ? user.nationalId : 'Student Id' %></span>
                     </div>
                     <img class="h-10 w-10 rounded-full border-2 border-gray-600 object-cover" 
-                         src="<%= typeof etudiant !== 'undefined' && etudiant.profilePicture ? etudiant.profilePicture : '/uploads/default-avatars/default.png' %>" 
+                         src="<%= user && user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatars.png' %>" 
                          alt="Profile Picture">
                 </div>
             </div>
@@ -66,7 +66,7 @@
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-400 font-medium">Total Absences</p>
-                    <p class="text-3xl font-bold text-white mt-1">12 <span class="text-sm font-normal text-gray-500">hours</span></p>
+                    <p class="text-3xl font-bold text-white mt-1"> <%= totalHours %> <span class="text-sm font-normal text-gray-500">hours</span></p>
                 </div>
                 <div class="h-12 w-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-800">
                     <i class="fa-solid fa-clock text-blue-400 text-xl"></i>
@@ -76,7 +76,7 @@
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-400 font-medium">Justified</p>
-                    <p class="text-3xl font-bold text-green-400 mt-1">8 <span class="text-sm font-normal text-gray-500">hours</span></p>
+                    <p class="text-3xl font-bold text-green-400 mt-1"><%=justifiedHours%> <span class="text-sm font-normal text-gray-500">hours</span></p>
                 </div>
                 <div class="h-12 w-12 rounded-full bg-green-900/50 flex items-center justify-center border border-green-800">
                     <i class="fa-solid fa-check-circle text-green-400 text-xl"></i>
@@ -87,7 +87,7 @@
                 <div class="absolute right-0 top-0 w-2 h-full bg-red-500"></div>
                 <div>
                     <p class="text-sm text-gray-400 font-medium">Unjustified</p>
-                    <p class="text-3xl font-bold text-red-400 mt-1">4 <span class="text-sm font-normal text-gray-500">hours</span></p>
+                    <p class="text-3xl font-bold text-red-400 mt-1"><%=unjustifiedHours%> <span class="text-sm font-normal text-gray-500">hours</span></p>
                 </div>
                 <div class="h-12 w-12 rounded-full bg-red-900/50 flex items-center justify-center border border-red-800">
                     <i class="fa-solid fa-triangle-exclamation text-red-400 text-xl"></i>
@@ -145,82 +145,71 @@
                             <th scope="col" class="px-6 py-4 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-700">
-                        
-                        <tr class="bg-gray-800 hover:bg-gray-750 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white font-medium">Oct 12, 2023</div>
-                                <div class="text-xs text-gray-500">08:30 AM - 10:00 AM</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-purple-500"></div>
-                                    Mathematics (Analysis)
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">Dr. Smith</td>
-                            <td class="px-6 py-4">Lecture (Cours)</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-red-900/50 text-red-400 text-xs font-medium px-2.5 py-1 rounded border border-red-800">
-                                    Unjustified
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-blue-400 hover:text-blue-300 font-medium text-xs underline">Justify</button>
-                            </td>
-                        </tr>
+<tbody class="divide-y divide-gray-700">
+  <% absences.forEach(item => { %>
+    <tr class="bg-gray-800 hover:bg-gray-750 transition-colors">
+      
+      <!-- DATE -->
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-white font-medium">
+          <%= new Date(item.absence.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }) %>
+        </div>
+        <div class="text-xs text-gray-500">
+          <%= item.absence.startTime %> - <%= item.absence.endTime %>
+        </div>
+      </td>
 
-                        <tr class="bg-gray-800 hover:bg-gray-750 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white font-medium">Oct 05, 2023</div>
-                                <div class="text-xs text-gray-500">14:00 PM - 16:00 PM</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                                    Computer Science (Algo)
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">Prof. Johnson</td>
-                            <td class="px-6 py-4">Lab (TP)</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-green-900/50 text-green-400 text-xs font-medium px-2.5 py-1 rounded border border-green-800 flex inline-flex items-center gap-1">
-                                    <i class="fa-solid fa-check text-[10px]"></i> Justified
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-gray-500 hover:text-white transition cursor-pointer" title="View Document">
-                                    <i class="fa-solid fa-paperclip"></i>
-                                </button>
-                            </td>
-                        </tr>
+      <!-- SUBJECT -->
+      <td class="px-6 py-4">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+          <%= item.absence.subject?.name || 'N/A' %>
+        </div>
+      </td>
 
-                        <tr class="bg-gray-800 hover:bg-gray-750 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white font-medium">Sep 28, 2023</div>
-                                <div class="text-xs text-gray-500">10:15 AM - 11:45 AM</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                    Physics (Mechanics)
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">Mr. Anderson</td>
-                            <td class="px-6 py-4">Tutorial (TD)</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-green-900/50 text-green-400 text-xs font-medium px-2.5 py-1 rounded border border-green-800 flex inline-flex items-center gap-1">
-                                    <i class="fa-solid fa-check text-[10px]"></i> Justified
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-gray-500 hover:text-white transition cursor-pointer" title="View Document">
-                                    <i class="fa-solid fa-paperclip"></i>
-                                </button>
-                            </td>
-                        </tr>
+      <!-- TEACHER -->
+      <td class="px-6 py-4">
+        <%= item.teacher ? item.teacher.firstName + ' ' + item.teacher.lastName : 'N/A' %>
+      </td>
 
-                    </tbody>
+      <!-- TYPE -->
+      <td class="px-6 py-4">
+        <%= item.absence.sessionType %>
+      </td>
+
+      <!-- STATUS -->
+      <td class="px-6 py-4">
+        <% if (item.absence.isJustified) { %>
+          <span class="bg-green-900/50 text-green-400 text-xs font-medium px-2.5 py-1 rounded border border-green-800 flex inline-flex items-center gap-1">
+            <i class="fa-solid fa-check text-[10px]"></i> Justified
+          </span>
+        <% } else { %>
+          <span class="bg-red-900/50 text-red-400 text-xs font-medium px-2.5 py-1 rounded border border-red-800">
+            Unjustified
+          </span>
+        <% } %>
+      </td>
+
+      <!-- ACTION -->
+      <td class="px-6 py-4 text-right">
+        <% if (!item.absence.isJustified) { %>
+          <button class="text-blue-400 hover:text-blue-300 font-medium text-xs underline">
+            Justify
+          </button>
+        <% } else { %>
+          <button class="text-gray-500 hover:text-white transition cursor-pointer" title="View Document">
+            <i class="fa-solid fa-paperclip"></i>
+          </button>
+        <% } %>
+      </td>
+
+    </tr>
+  <% }) %>
+</tbody>
                 </table>
             </div>
             
