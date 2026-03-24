@@ -104,6 +104,56 @@
                 </div>
             </div>
         </section>
+        <!-- SUBJECT ABSENCE PROGRESS -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <% elimination_analysis.forEach(item => { 
+       const absences = item.numberOfAbsences;
+       const max = item.subject.maxAbsencesLimit;
+
+       // Determine status & color
+       let status = 'Safe';
+       let colorClass = 'bg-green-400';
+       if (absences >= max) {
+         status = 'Eliminated';
+         colorClass = 'bg-red-500';
+       } else if (absences >= max * 0.6) {
+         status = 'Warning';
+         colorClass = 'bg-yellow-400';
+       }
+
+       const percentage = Math.min((absences / max) * 100, 100);
+  %>
+    <div class="bg-gray-800 border <%= status === 'Eliminated' ? 'border-red-900/50' : 'border-gray-700' %> rounded-xl p-5 shadow-lg hover:shadow-xl transition relative overflow-hidden">
+      <% if(status === 'Eliminated') { %>
+        <div class="absolute top-0 right-0 w-1.5 h-full bg-red-500"></div>
+      <% } %>
+
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-white font-semibold"><%= item.subject.name %></h3>
+        <span class="text-xs text-gray-400">Max: <%= max %></span>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-700 rounded-full h-2 mb-3">
+        <div class="<%= colorClass %> h-2 rounded-full" style="width: <%= percentage %>%"></div>
+      </div>
+
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400"><%= absences %> / <%= max %> absences</span>
+        <span class="<%= colorClass.replace('bg-', 'text-') %> font-medium flex items-center gap-1">
+          <% if(status === 'Eliminated') { %>
+            <i class="fa-solid fa-circle-xmark text-xs"></i>
+          <% } else if(status === 'Warning') { %>
+            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+          <% } else { %>
+            <i class="fa-solid fa-check text-xs"></i>
+          <% } %>
+          <%= status %>
+        </span>
+      </div>
+    </div>
+  <% }) %>
+</section>
 
         <section class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
             

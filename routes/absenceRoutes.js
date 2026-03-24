@@ -12,10 +12,10 @@ router.get('/', authMiddleware, async (req, res) => {
     const { totalHours, justifiedHours, unjustifiedHours } =
       await absenceController.getStudentAbsenceHours(studentId);
     const absences=await absenceController.getStudentAbsences(studentId);
-    console.log(absences) 
+    const elimination_analysis=await absenceController.getStudentAbsencesBySubject(studentId);
 
     // Render EJS template
-    res.render('absence', { user,totalHours, justifiedHours, unjustifiedHours ,absences});
+    res.render('absence', { user,totalHours, justifiedHours, unjustifiedHours ,absences,elimination_analysis});
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');

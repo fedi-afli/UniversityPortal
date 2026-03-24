@@ -1,5 +1,5 @@
 const Absence = require('../models/Absence');
-const subject=require('../models/Subject')
+const Subject=require('../models/Subject')
 
 /**
  * Controller to get total absence hours for a student
@@ -66,8 +66,43 @@ const getStudentAbsences = async (studentId) => {
     throw err;
   }
 };
+const getStudentAbsencesBySubject = async (studentId) => {
+  try {
+    // Aggregate only **unjustified absences** by subject
+    const absencesBySubject = await Absence.aggregate([
+      { $match: { student: studentId, isJustified: false } }, // <-- exclude justified
+      {
+        $group: {
+          _id: "$subject",
+          numberOfAbsences: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Fetch subject objects for all _id's
+    const subjectIds = absencesBySubject.map(a => a._id);
+    const subjects = await Subject.find({ _id: { $in: subjectIds } }).lean();
+
+    // Merge counts with subjects
+    const result = absencesBySubject.map(a => {
+      const subject = subjects.find(s => s._id.equals(a._id));
+      return {
+        subject,
+        numberOfAbsences: a.numberOfAbsences
+      };
+    }).filter(Boolean);
+
+    return result;
+
+  } catch (err) {
+    console.error("Error in getStudentAbsencesBySubject:", err);
+    throw err;
+  }
+};
+
 
 module.exports = {
   getStudentAbsenceHours,
-  getStudentAbsences 
+  getStudentAbsences,
+  getStudentAbsencesBySubject
 };
