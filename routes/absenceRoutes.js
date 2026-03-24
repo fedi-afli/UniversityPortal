@@ -12,7 +12,7 @@ const Absence = require('../models/Absence');
 const { sendJustificationConfirmation } = require('../routes/email');
 
 
-const uploadDir = path.join(__dirname, '../uploads/certificate/');
+const uploadDir = path.join(__dirname, '../public/uploads/justification/');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -41,7 +41,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/certificate/');
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -52,6 +52,7 @@ const upload = multer({ storage });
 router.post('/justify', authMiddleware, upload.single('certificate'), async (req, res) => {
     const student = req.user;
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    console.log(" FILE SAVED INITIALLY AT:", req.file.path);
 
     try {
         const imagePath = path.resolve(req.file.path);
@@ -62,6 +63,10 @@ router.post('/justify', authMiddleware, upload.single('certificate'), async (req
         let success = false;
 
         if (aiResult.valid && aiResult.isStudentMatch === false) {
+     
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            console.log("File deleted: Name mismatch.");
+
             return res.json({
                 aiResponse: `I found a certificate for "${aiResult.patientName}", but your profile name is "${studentFullName}".`,
                 statusMessage: "Name mismatch error. Document rejected.",
@@ -84,14 +89,12 @@ router.post('/justify', authMiddleware, upload.single('certificate'), async (req
             const absencesToJustify = await Absence.find(query).populate('subject');
 
             if (absencesToJustify.length > 0) {
-                // 1. Get unique subject names
                 const subjectNames = [...new Set(absencesToJustify.map(a => a.subject?.name || 'Unknown Subject'))];
 
-                // 2. Update DB
                 const result = await Absence.updateMany(query, {
                     $set: {
                         isJustified: true,
-                        justificationDocumentUrl: `/uploads/certificate/${req.file.filename}`,
+                        justificationDocumentUrl: `/uploads/justification/${req.file.filename}`,
                         updatedAt: new Date()
                     }
                 });
@@ -99,21 +102,20 @@ router.post('/justify', authMiddleware, upload.single('certificate'), async (req
                 dbMessage = `Success! ${result.modifiedCount} absence(s) justified.`;
                 success = true;
                 
-                // 3. Send Email with the subject list
                 try {
-                    await sendJustificationConfirmation(
-                        student.email, 
-                        student.firstName || student.prenom, 
-                        aiResult, 
-                        dbMessage,
-                        subjectNames // Pass the array here
-                    );
+                    await sendJustificationConfirmation(student.email, student.firstName || student.prenom, aiResult, dbMessage, subjectNames);
                 } catch (mailError) {
                     console.error("Email failed:", mailError);
                 }
             } else {
                 dbMessage = `No unjustified absences found between ${aiResult.startDate} and ${aiResult.endDate}.`;
             }
+        }
+
+      
+        if (!success && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+            console.log(" File deleted: No absences justified or invalid document.");
         }
 
         res.json({
@@ -123,6 +125,11 @@ router.post('/justify', authMiddleware, upload.single('certificate'), async (req
         });
 
     } catch (error) {
+        
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+            console.log(" File deleted: Server/AI Error.");
+        }
         console.error("AI processing failed:", error);
         res.status(500).json({ error: 'AI processing failed' });
     }
