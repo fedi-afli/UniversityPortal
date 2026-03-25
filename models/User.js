@@ -12,9 +12,11 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
+
   profilePicture: { type: String, default: '/public/uploads/default-avatars/default-avatar.png' },
   dateOfBirth: { type: Date, required: true },
   
+
   
   // Auth & Security
   isVerified: { type: Boolean, default: false },

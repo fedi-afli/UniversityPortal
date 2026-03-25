@@ -5,7 +5,9 @@ const User = require('./User'); // Import the base model
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, unique: true, sparse: true },    // Formerly numero_inscription
   nationalId: { type: String, required: true, unique: true }, // Formerly cin
+
   inscription: { type: String, sparse: true },
+
           // Formerly cne
   major: { type: String }, // e.g., "Computer Science" (Formerly filiere)
   level: { type: String }, // e.g., "Year 3" or "L3" (Formerly niveau)

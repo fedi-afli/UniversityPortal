@@ -1,6 +1,7 @@
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+
 const { signPDF } = require('./pdfSigner'); // Import de l'étape 1
 
 async function generateAttestationPDF(request, etudiant, inscription) {
@@ -78,6 +79,7 @@ async function generateAttestationPDF(request, etudiant, inscription) {
 
         stream.on('error', reject);
     });
+
 }
 
 module.exports = { generateAttestationPDF };

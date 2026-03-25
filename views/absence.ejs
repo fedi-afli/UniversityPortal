@@ -13,6 +13,19 @@
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+        .message-notification {
+    position: fixed;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
     </style>
 </head>
 <body class="bg-gray-900 min-h-screen font-sans flex flex-col text-gray-200">
@@ -35,11 +48,11 @@
                 
                 <div class="flex items-center gap-4">
                     <div class="hidden sm:flex flex-col items-end">
-                        <span class="text-sm font-medium text-white"><%= typeof etudiant !== 'undefined' ? etudiant.prenom + ' ' + etudiant.nom : 'Student Name' %></span>
-                        <span class="text-xs text-blue-400">ID: <%= typeof etudiant !== 'undefined' && etudiant.numero_inscription ? etudiant.numero_inscription : '12345678' %></span>
+                        <span class="text-sm font-medium text-white"><%= user && user.firstName && user.lastName? user.firstName + ' ' + user.lastName : 'Student Name' %></span>
+                        <span class="text-xs text-blue-400">ID: <%= user && user.nationalId ? user.nationalId : 'Student Id' %></span>
                     </div>
                     <img class="h-10 w-10 rounded-full border-2 border-gray-600 object-cover" 
-                         src="<%= typeof etudiant !== 'undefined' && etudiant.profilePicture ? etudiant.profilePicture : '/uploads/default-avatars/default.png' %>" 
+                         src="<%= user && user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatars.png' %>" 
                          alt="Profile Picture">
                 </div>
             </div>
@@ -48,25 +61,35 @@
 
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
         
-        <header>
-            <div class="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                <a href="/" class="hover:text-blue-400 transition">Home</a>
-                <i class="fa-solid fa-chevron-right text-xs"></i>
-                <span class="text-gray-200">Absence Tracking</span>
-            </div>
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h1 class="text-3xl font-bold text-white">Absence Tracking</h1>
-                <a href="/attestation" class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium">
-                    <i class="fa-solid fa-download"></i> Get Attestation
-                </a>
-            </div>
-        </header>
+<header>
+    <div class="flex items-center gap-2 text-sm text-gray-400 mb-2">
+        <a href="/" class="hover:text-blue-400 transition">Home</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <span class="text-gray-200">Absence Tracking</span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 class="text-3xl font-bold text-white">Absence Tracking</h1>
+
+        <!-- Attestation button -->
+        <div class="flex flex-col items-start gap-2">
+            <a href="/api/attestations" class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-4 py-2 rounded-lg transition shadow-sm text-sm font-medium">
+                <i class="fa-solid fa-download"></i> Get Attestation
+            </a>
+
+            <!-- Justify Absences button -->
+            <button id="justifyBtn"
+                class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg shadow-sm transition font-medium flex items-center gap-2">
+                <i class="fa-solid fa-file-upload"></i> Justify Your Absences
+            </button>
+        </div>
+    </div>
+</header>
 
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-400 font-medium">Total Absences</p>
-                    <p class="text-3xl font-bold text-white mt-1">12 <span class="text-sm font-normal text-gray-500">hours</span></p>
+                    <p class="text-3xl font-bold text-white mt-1"> <%= totalHours %> <span class="text-sm font-normal text-gray-500">hours</span></p>
                 </div>
                 <div class="h-12 w-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-800">
                     <i class="fa-solid fa-clock text-blue-400 text-xl"></i>
@@ -76,7 +99,7 @@
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center justify-between">
                 <div>
                     <p class="text-sm text-gray-400 font-medium">Justified</p>
-                    <p class="text-3xl font-bold text-green-400 mt-1">8 <span class="text-sm font-normal text-gray-500">hours</span></p>
+                    <p class="text-3xl font-bold text-green-400 mt-1"><%=justifiedHours%> <span class="text-sm font-normal text-gray-500">hours</span></p>
                 </div>
                 <div class="h-12 w-12 rounded-full bg-green-900/50 flex items-center justify-center border border-green-800">
                     <i class="fa-solid fa-check-circle text-green-400 text-xl"></i>
@@ -87,49 +110,85 @@
                 <div class="absolute right-0 top-0 w-2 h-full bg-red-500"></div>
                 <div>
                     <p class="text-sm text-gray-400 font-medium">Unjustified</p>
-                    <p class="text-3xl font-bold text-red-400 mt-1">4 <span class="text-sm font-normal text-gray-500">hours</span></p>
+                    <p class="text-3xl font-bold text-red-400 mt-1"><%=unjustifiedHours%> <span class="text-sm font-normal text-gray-500">hours</span></p>
                 </div>
                 <div class="h-12 w-12 rounded-full bg-red-900/50 flex items-center justify-center border border-red-800">
                     <i class="fa-solid fa-triangle-exclamation text-red-400 text-xl"></i>
                 </div>
             </div>
         </section>
+        <!-- SUBJECT ABSENCE PROGRESS -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <% elimination_analysis.sort((a, b) => a.subject.name.localeCompare(b.subject.name)).forEach(item => { 
+       const absences = item.numberOfAbsences;
+       const max = item.subject.maxAbsencesLimit;
+
+       // Determine status & color
+       let status = 'Safe';
+       let colorClass = 'bg-green-400';
+       if (absences >= max) {
+         status = 'Eliminated';
+         colorClass = 'bg-red-500';
+       } else if (absences >= max * 0.6) {
+         status = 'Warning';
+         colorClass = 'bg-yellow-400';
+       }
+
+       const percentage = Math.min((absences / max) * 100, 100);
+  %>
+    <div class="bg-gray-800 border <%= status === 'Eliminated' ? 'border-red-900/50' : 'border-gray-700' %> rounded-xl p-5 shadow-lg hover:shadow-xl transition relative overflow-hidden">
+      <% if(status === 'Eliminated') { %>
+        <div class="absolute top-0 right-0 w-1.5 h-full bg-red-500"></div>
+      <% } %>
+
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-white font-semibold"><%= item.subject.name %></h3>
+        <span class="text-xs text-gray-400">Max: <%= max %></span>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-700 rounded-full h-2 mb-3">
+        <div class="<%= colorClass %> h-2 rounded-full" style="width: <%= percentage %>%"></div>
+      </div>
+
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400"><%= absences %> / <%= max %> absences</span>
+        <span class="<%= colorClass.replace('bg-', 'text-') %> font-medium flex items-center gap-1">
+          <% if(status === 'Eliminated') { %>
+            <i class="fa-solid fa-circle-xmark text-xs"></i>
+          <% } else if(status === 'Warning') { %>
+            <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+          <% } else { %>
+            <i class="fa-solid fa-check text-xs"></i>
+          <% } %>
+          <%= status %>
+        </span>
+      </div>
+    </div>
+  <% }) %>
+</section>
 
         <section class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
             
             <div class="p-6 border-b border-gray-700 bg-gray-800 flex flex-col md:flex-row gap-4 justify-between items-center">
-                <h2 class="text-lg font-semibold text-white">Absence History</h2>
-                
-                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <i class="fa-solid fa-book text-gray-400 text-sm"></i>
-                        </div>
-                        <select class="bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 appearance-none">
-                            <option selected>All Subjects</option>
-                            <option value="math">Mathematics</option>
-                            <option value="physics">Physics</option>
-                            <option value="cs">Computer Science</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
-                        </div>
-                    </div>
+    <h2 class="text-lg font-semibold text-white">Absence History</h2>
 
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <i class="fa-solid fa-chalkboard-user text-gray-400 text-sm"></i>
-                        </div>
-                        <select class="bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 appearance-none">
-                            <option selected>All Teachers</option>
-                            <option value="t1">Dr. Smith</option>
-                            <option value="t2">Prof. Johnson</option>
-                            <option value="t3">Mr. Anderson</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
-                        </div>
-                    </div>
+    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <!-- SUBJECT FILTER -->
+        <select id="subjectFilter"
+            class="bg-gray-900 border border-gray-600 text-white text-sm rounded-lg p-2.5">
+            <option value="">All Subjects</option>
+        </select>
+
+        <!-- TEACHER FILTER -->
+        <select id="teacherFilter"
+            class="bg-gray-900 border border-gray-600 text-white text-sm rounded-lg p-2.5">
+            <option value="">All Teachers</option>
+        </select>
+    </div>
+</div>
+
+
                 </div>
             </div>
 
@@ -142,98 +201,349 @@
                             <th scope="col" class="px-6 py-4">Teacher</th>
                             <th scope="col" class="px-6 py-4">Type</th>
                             <th scope="col" class="px-6 py-4">Status</th>
-                            <th scope="col" class="px-6 py-4 text-right">Action</th>
+                            
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-700">
-                        
-                        <tr class="bg-gray-800 hover:bg-gray-750 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white font-medium">Oct 12, 2023</div>
-                                <div class="text-xs text-gray-500">08:30 AM - 10:00 AM</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-purple-500"></div>
-                                    Mathematics (Analysis)
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">Dr. Smith</td>
-                            <td class="px-6 py-4">Lecture (Cours)</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-red-900/50 text-red-400 text-xs font-medium px-2.5 py-1 rounded border border-red-800">
-                                    Unjustified
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-blue-400 hover:text-blue-300 font-medium text-xs underline">Justify</button>
-                            </td>
-                        </tr>
+<tbody class="divide-y divide-gray-700">
+  <% absences.forEach(item => { %>
+    <tr class="bg-gray-800 hover:bg-gray-750 transition-colors"
+        data-subject="<%= item.absence.subject?.name || '' %>"
+        data-teacher="<%= item.teacher ? item.teacher.firstName + ' ' + item.teacher.lastName : '' %>">
+      
+      <!-- DATE -->
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-white font-medium">
+          <%= new Date(item.absence.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }) %>
+        </div>
+        <div class="text-xs text-gray-500">
+          <%= item.absence.startTime %> - <%= item.absence.endTime %>
+        </div>
+      </td>
 
-                        <tr class="bg-gray-800 hover:bg-gray-750 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white font-medium">Oct 05, 2023</div>
-                                <div class="text-xs text-gray-500">14:00 PM - 16:00 PM</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                                    Computer Science (Algo)
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">Prof. Johnson</td>
-                            <td class="px-6 py-4">Lab (TP)</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-green-900/50 text-green-400 text-xs font-medium px-2.5 py-1 rounded border border-green-800 flex inline-flex items-center gap-1">
-                                    <i class="fa-solid fa-check text-[10px]"></i> Justified
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-gray-500 hover:text-white transition cursor-pointer" title="View Document">
-                                    <i class="fa-solid fa-paperclip"></i>
-                                </button>
-                            </td>
-                        </tr>
+      <!-- SUBJECT -->
+      <td class="px-6 py-4">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full subject-dot" data-subject="<%= item.absence.subject?.name || 'N/A' %>"></div>
+          <%= item.absence.subject?.name || 'N/A' %>
+        </div>
+      </td>
 
-                        <tr class="bg-gray-800 hover:bg-gray-750 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-white font-medium">Sep 28, 2023</div>
-                                <div class="text-xs text-gray-500">10:15 AM - 11:45 AM</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                    Physics (Mechanics)
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">Mr. Anderson</td>
-                            <td class="px-6 py-4">Tutorial (TD)</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-green-900/50 text-green-400 text-xs font-medium px-2.5 py-1 rounded border border-green-800 flex inline-flex items-center gap-1">
-                                    <i class="fa-solid fa-check text-[10px]"></i> Justified
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-gray-500 hover:text-white transition cursor-pointer" title="View Document">
-                                    <i class="fa-solid fa-paperclip"></i>
-                                </button>
-                            </td>
-                        </tr>
+      <!-- TEACHER -->
+      <td class="px-6 py-4">
+        <%= item.teacher ? item.teacher.firstName + ' ' + item.teacher.lastName : 'N/A' %>
+      </td>
 
-                    </tbody>
+      <!-- TYPE -->
+      <td class="px-6 py-4">
+        <%= item.absence.sessionType %>
+      </td>
+
+      <!-- STATUS -->
+      <td class="px-6 py-4">
+        <% if (item.absence.isJustified) { %>
+          <span class="bg-green-900/50 text-green-400 text-xs font-medium px-2.5 py-1 rounded border border-green-800 flex inline-flex items-center gap-1">
+            <i class="fa-solid fa-check text-[10px]"></i> Justified
+          </span>
+        <% } else { %>
+          <span class="bg-red-900/50 text-red-400 text-xs font-medium px-2.5 py-1 rounded border border-red-800">
+            Unjustified
+          </span>
+        <% } %>
+      </td>
+
+
+
+    </tr>
+  <% }) %>
+  <tr id="noResultsRow" style="display:none;">
+  <td colspan="6" class="text-center py-6 text-gray-400">
+    No results found
+  </td>
+</tr>
+</tbody>
                 </table>
             </div>
             
             <div class="p-4 border-t border-gray-700 bg-gray-800 flex justify-between items-center text-sm text-gray-400">
-                <span>Showing 1 to 3 of 3 entries</span>
-                <div class="flex gap-2">
-                    <button class="px-3 py-1 rounded bg-gray-900 border border-gray-700 hover:bg-gray-700 disabled:opacity-50" disabled>Prev</button>
-                    <button class="px-3 py-1 rounded bg-gray-900 border border-gray-700 hover:bg-gray-700 disabled:opacity-50" disabled>Next</button>
-                </div>
+               <span id="tableInfo"></span>
+
             </div>
         </section>
 
     </main>
 
+    <!-- Modal Background -->
+<div id="justifyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    
+    <div class="bg-gray-800 rounded-xl w-full max-w-md p-6 relative shadow-2xl border border-gray-700 mx-4">
+        <button id="closeModal" class="absolute top-3 right-3 text-gray-400 hover:text-white transition">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-robot text-blue-400"></i> AI Justification
+        </h2>
+        
+        <div id="aiResponseArea" class="hidden mb-4 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10">
+            <p class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1">Atlas AI says:</p>
+            <p id="aiChat" class="text-blue-100 text-sm italic mb-3 leading-relaxed"></p>
+            <div id="dbStatus" class="text-xs font-semibold p-2 rounded bg-gray-900/50 border border-gray-700"></div>
+        </div>
+
+        <div id="uploadFields">
+           <p class="text-gray-400 text-sm mb-4">Upload your digital medical certificate (PDF ONLY). Atlas will analyze the dates and update your absences automatically.</p>
+            
+            <label class="block mb-4">
+                <span class="sr-only">Choose File</span>
+                <input type="file" id="certificateInput" accept="application/pdf"
+                    class="block w-full text-sm text-gray-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-600 file:text-white
+                    hover:file:bg-blue-500 cursor-pointer">
+            </label>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+            <button id="cancelUpload" class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition">
+                Cancel
+            </button>
+            <button id="submitUpload" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-lg transition font-medium flex items-center gap-2 shadow-lg shadow-blue-900/20">
+                <span id="btnText">Submit to AI</span>
+                <i id="spinner" class="fa-solid fa-circle-notch fa-spin hidden"></i>
+            </button>
+        </div>
+    </div>
+</div>
+   <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const subjectFilter = document.getElementById("subjectFilter");
+    const teacherFilter = document.getElementById("teacherFilter");
+    const rows = document.querySelectorAll("tbody tr:not(#noResultsRow)");
+    const tableInfo = document.getElementById("tableInfo");
+    const noResultsRow = document.getElementById("noResultsRow");
+
+    const subjectsSet = new Set();
+    const teachersSet = new Set();
+    // Generate a consistent color for a string
+
+
+    // 🔹 Extract unique subjects & teachers
+    rows.forEach(row => {
+        const subject = row.dataset.subject?.trim();
+        const teacher = row.dataset.teacher?.trim();
+
+        if (subject) subjectsSet.add(subject);
+        if (teacher) teachersSet.add(teacher);
+    });
+
+    // 🔹 Fill SUBJECT dropdown (sorted)
+    [...subjectsSet].sort().forEach(sub => {
+        const option = document.createElement("option");
+        option.value = sub;
+        option.textContent = sub;
+        subjectFilter.appendChild(option);
+    });
+
+    // 🔹 Fill TEACHER dropdown (sorted)
+    [...teachersSet].sort().forEach(t => {
+        const option = document.createElement("option");
+        option.value = t;
+        option.textContent = t;
+        teacherFilter.appendChild(option);
+    });
+
+    // 🔥 Update table info
+    function updateTableInfo() {
+        const visibleRows = [...rows].filter(row => row.style.display !== "none");
+
+        const total = rows.length;
+        const visible = visibleRows.length;
+
+        if (visible === 0) {
+            tableInfo.textContent = "Showing 0 of " + total + " entries";
+            noResultsRow.style.display = "";
+        } else {
+            tableInfo.textContent = `Showing  ${visible} of ${total} entries`;
+            noResultsRow.style.display = "none";
+        }
+    }
+
+    // 🔥 Filter function
+    function filterTable() {
+        const selectedSubject = subjectFilter.value;
+        const selectedTeacher = teacherFilter.value;
+
+        rows.forEach(row => {
+            const subject = row.dataset.subject?.trim();
+            const teacher = row.dataset.teacher?.trim();
+
+            const matchSubject = !selectedSubject || subject === selectedSubject;
+            const matchTeacher = !selectedTeacher || teacher === selectedTeacher;
+
+            row.style.display = (matchSubject && matchTeacher) ? "" : "none";
+        });
+
+        updateTableInfo();
+    }
+// Generate consistent color from string
+function getColorFromString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = hash % 360;
+    return `hsl(${h}, 60%, 50%)`; // HSL gives good vibrant colors
+}
+
+// Apply color to all subject dots
+document.querySelectorAll('.subject-dot').forEach(dot => {
+    const subject = dot.dataset.subject;
+    dot.style.backgroundColor = getColorFromString(subject);
+});
+
+    // 🔹 Events
+    subjectFilter.addEventListener("change", filterTable);
+    teacherFilter.addEventListener("change", filterTable);
+
+    // 🔹 Initial state
+    updateTableInfo();
+    // Modal Logic
+const justifyBtn = document.getElementById('justifyBtn');
+const justifyModal = document.getElementById('justifyModal');
+const closeModal = document.getElementById('closeModal');
+const cancelUpload = document.getElementById('cancelUpload');
+const submitUpload = document.getElementById('submitUpload');
+const certificateInput = document.getElementById('certificateInput');
+
+
+justifyBtn.addEventListener('click', () => {
+    justifyModal.classList.remove('hidden');
+});
+
+
+function closeModalAndReset() {
+    justifyModal.classList.add('hidden'); // Hide the modal
+    
+
+    document.getElementById('aiResponseArea').classList.add('hidden');
+
+    document.getElementById('aiChat').innerText = '';
+    document.getElementById('dbStatus').innerText = '';
+
+    document.getElementById('dbStatus').classList.remove('text-red-400', 'text-green-400');
+    
+
+    document.getElementById('certificateInput').value = ''; 
+}
+
+
+closeModal.addEventListener('click', closeModalAndReset);
+
+
+cancelUpload.addEventListener('click', () => {
+    if (cancelUpload.innerText.trim() === "Cancel") {
+        closeModalAndReset();
+    }
+});
+
+// Handle submit (for now, just preview the file name)
+submitUpload.addEventListener('click', async () => {
+    const file = certificateInput.files[0];
+    if (!file) return alert('Please select a file.');
+
+    // UI States
+    const btnText = document.getElementById('btnText');
+    const spinner = document.getElementById('spinner');
+    const aiResponseArea = document.getElementById('aiResponseArea');
+    const aiChat = document.getElementById('aiChat');
+    const dbStatus = document.getElementById('dbStatus');
+
+    // Start Loading
+    submitUpload.disabled = true;
+    btnText.innerText = "Atlas is thinking...";
+    spinner.classList.remove('hidden');
+
+    const formData = new FormData();
+    formData.append('certificate', file);
+
+    try {
+        const response = await fetch('/api/absence/justify', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        // Show AI Result in Popup
+        aiResponseArea.classList.remove('hidden');
+        aiChat.innerText = `"${data.aiResponse}"`;
+        dbStatus.innerText = data.statusMessage;
+        function showToast(message, isSuccess) {
+    
+            let toast = document.getElementById('floating-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'floating-toast';
+                document.body.appendChild(toast);
+            }
+
+            // Set text and colors
+            toast.textContent = message;
+            const baseClasses = 'message-notification transition-all duration-300 ';
+            const colorClasses = isSuccess 
+                ? 'bg-green-900 text-green-100 border border-green-700' 
+                : 'bg-red-900 text-red-100 border border-red-700';
+            
+            toast.className = baseClasses + colorClasses;
+            toast.classList.remove('hidden');
+
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 10000);
+}
+        
+       if(data.success) {
+            dbStatus.classList.remove('text-red-400');
+            dbStatus.classList.add('text-green-400');
+            showToast(`${data.statusMessage}`, true);
+            
+            document.getElementById('uploadFields').classList.add('hidden');
+            
+            // Hide the Submit button
+            submitUpload.classList.add('hidden');
+            
+           
+            const cancelBtn = document.getElementById('cancelUpload');
+            cancelBtn.innerText = "Close & Refresh Table";
+            cancelBtn.classList.remove('text-gray-400');
+            cancelBtn.classList.add('text-white', 'bg-gray-700', 'hover:bg-gray-600', 'px-5', 'py-2', 'rounded-lg');
+            
+            // When the user clicks Close, THEN reload the page to show the green badges
+            cancelBtn.onclick = () => window.location.reload();
+            document.getElementById('closeModal').onclick = () => window.location.reload();
+
+        } else {
+            dbStatus.classList.remove('text-green-400');
+            dbStatus.classList.add('text-red-400');
+            // If it fails, keep the submit button visible so they can try a different file
+        }
+
+    } catch (err) {
+        alert("Error connecting to AI server.");
+    } finally {
+        submitUpload.disabled = false;
+        btnText.innerText = "Submit to AI";
+        spinner.classList.add('hidden');
+    }
+});
+});
+</script>
 </body>
 </html>
