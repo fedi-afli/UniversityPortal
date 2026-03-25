@@ -2,12 +2,12 @@ const axios = require('axios');
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
-async function askOllama(prompt, model = process.env.OLLAMA_MODEL) {
+async function askOllama(prompt, model = process.env.OLLAMA_MODEL || 'gemma3:1b') {
   try {
     const response = await axios.post(`${OLLAMA_URL}/api/chat`, {
       model,
       messages: [
-        { role: 'system', content: 'Tu es un agent universitaire poli et précis spécialisé dans les attestations de présence.' },
+        { role: 'system', content: 'Tu es un agent universitaire spécialisé dans les attestations de présence.' },
         { role: 'user', content: prompt }
       ],
       stream: false

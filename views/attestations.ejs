@@ -8,25 +8,52 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Smooth transition for the chat window */
-    .chat-window {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(20px) scale(0.95);
-        opacity: 0;
-        pointer-events: none;
-    }
-    .chat-window.active {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-        pointer-events: auto;
-    }
+        /* Chat Window Transitions */
+        .chat-window {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .chat-window.active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translate(-50%, 20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .animate-toast { animation: toastIn 0.4s ease-out forwards; }
+
+        /* Loading Spinner */
+        .spinner {
+            animation: rotate 2s linear infinite;
+            width: 18px;
+            height: 18px;
+        }
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body class="bg-gray-900 min-h-screen font-sans flex flex-col text-gray-200">
+<body class="bg-gray-900 min-h-screen font-sans flex flex-col text-gray-200 relative">
+
+    <div id="message-box" class="hidden fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[100] px-6 py-3 rounded-full text-sm font-medium shadow-2xl transition-all duration-300"></div>
 
     <%- include('partials/navbar') %>
 
@@ -41,10 +68,9 @@
             <h1 class="text-3xl font-bold text-white">Attendance Certificate</h1>
         </header>
 
-        <!-- Student info card -->
         <section class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg flex items-center gap-5">
             <img
-                src="<%= etudiant.profilePicture %>"
+                src="<%= etudiant.profilePicture || '/default-avatar.png' %>"
                 alt="Profile"
                 class="w-16 h-16 rounded-full object-cover border-2 border-blue-600/50 shadow-md flex-shrink-0"
             >
@@ -58,14 +84,12 @@
         </section>
 
         <section class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
-
             <div class="p-6 border-b border-gray-700">
                 <h2 class="text-lg font-semibold text-white">Certificate Details</h2>
                 <p class="text-sm text-gray-400 mt-1">Select the academic year and semester, then generate your certificate.</p>
             </div>
 
             <div class="p-6 space-y-6">
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label for="anneeInput" class="block text-xs font-medium text-gray-300 uppercase tracking-wide mb-1.5">
@@ -99,38 +123,98 @@
                     </div>
                 </div>
 
-                <button
-                    onclick="requestAttestation()"
-                    class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 shadow-lg shadow-blue-900/20 text-sm"
-                >
-                    <i class="fa-solid fa-file-circle-check"></i>
-                    Generate Certificate
-                </button>
-
-                <div id="download-area" class="hidden pt-4 border-t border-gray-700">
-                    <a
-                        id="download-link"
-                        href="#"
-                        target="_blank"
-                        class="inline-flex items-center gap-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 text-sm"
+                <div class="flex flex-wrap gap-4 items-center">
+                    <button
+                        id="generateBtn"
+                        onclick="requestAttestation()"
+                        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 shadow-lg shadow-blue-900/20 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <i class="fa-solid fa-download text-blue-400"></i>
-                        Download PDF Certificate
-                    </a>
+                        <span id="btn-icon"><i class="fa-solid fa-file-circle-check"></i></span>
+                        <span id="btn-text">Generate Certificate</span>
+                    </button>
                 </div>
+                
+                <div id="system-logs" class="hidden p-3 bg-black/30 rounded border border-gray-700 font-mono text-xs overflow-y-auto max-h-24"></div>
             </div>
         </section>
 
-        <section class="bg-gray-800 rounded-xl p-5 border border-gray-700 shadow-lg flex items-start gap-4">
+        <section class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden fade-in">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <div>
+                    <h2 class="text-lg font-semibold text-white">My Generated Certificates</h2>
+                    <p class="text-sm text-gray-400 mt-1">Access your approved documents anytime.</p>
+                </div>
+                <div class="px-3 py-1 bg-blue-900/30 border border-blue-800 rounded-full">
+                    <span class="text-blue-400 text-xs font-bold"><%= historique.length %> Documents</span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-900/50 text-gray-400 uppercase text-xs tracking-wider font-semibold">
+                        <tr>
+                            <th class="px-6 py-4">Document / Period</th>
+                            <th class="px-6 py-4">Generation Date</th>
+                            <th class="px-6 py-4">Status</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">
+                        <% if (historique && historique.length > 0) { %>
+                            <% historique.forEach(doc => { %>
+                                <tr class="hover:bg-gray-700/30 transition-colors group">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="h-10 w-10 rounded-lg bg-red-900/20 flex items-center justify-center border border-red-900/30 group-hover:border-red-500/50 transition-all">
+                                                <i class="fa-solid fa-file-pdf text-red-500 text-lg"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-white font-medium">Attendance Certificate</p>
+                                                <p class="text-xs text-gray-500"><%= doc.annee_universitaire %> — <%= doc.semestre %></p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-gray-400">
+                                        <%= new Date(doc.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2 py-1 bg-emerald-900/30 text-emerald-400 text-[10px] uppercase font-bold rounded border border-emerald-800/50">
+                                            Approved
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <a href="/api/attestations/<%= doc._id %>/download" 
+                                           class="inline-flex items-center gap-2 text-blue-400 hover:text-white hover:bg-blue-600 px-3 py-1.5 rounded-md transition-all text-xs font-semibold">
+                                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                                            Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="4" class="px-6 py-12 text-center">
+                                    <div class="flex flex-col items-center opacity-40">
+                                        <i class="fa-solid fa-folder-open text-4xl mb-3"></i>
+                                        <p class="text-sm italic">No certificates found in your records.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="bg-blue-900/20 rounded-xl p-5 border border-blue-800/40 shadow-lg flex items-start gap-4">
             <div class="h-10 w-10 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-800 flex-shrink-0 mt-0.5">
                 <i class="fa-solid fa-envelope text-blue-400"></i>
             </div>
             <div>
-                <p class="text-sm font-medium text-white">Email Notification</p>
+                <p class="text-sm font-medium text-white">Email Delivery</p>
                 <p class="text-sm text-gray-400 mt-0.5">
-                    You will be notified by email once your certificate is ready — or if there is any issue.
+                    An official copy is automatically sent to your student email with the PDF attached upon approval.
                 </p>
-                <p class="text-xs text-gray-500 mt-1">Processing usually takes a few moments.</p>
             </div>
         </section>
 
@@ -139,19 +223,52 @@
     <script>
         const matriculeEtudiant = "<%= etudiant.nationalId || etudiant.studentId || '' %>";
 
+        // Toast Notification System
+        function displayMessage(message, type) {
+            const messageBox = document.getElementById('message-box');
+            messageBox.textContent = message;
+
+            let classes = 'fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[100] px-6 py-3 rounded-full text-sm font-medium shadow-2xl transition-all duration-300 animate-toast';
+
+            if (type === 'error') {
+                classes += ' bg-red-900 text-red-100 border border-red-700';
+            } else if (type === 'success') {
+                classes += ' bg-green-900 text-green-100 border border-green-700';
+            } else {
+                classes += ' bg-gray-800 text-white border border-gray-700';
+            }
+
+            messageBox.className = classes;
+            messageBox.classList.remove('hidden');
+          
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 5000);
+        }
+
         async function requestAttestation() {
-            const logs = document.getElementById('system-logs') || { innerHTML: '', scrollTop: 0 };
-            logs.innerHTML += `<div class="text-blue-400 text-sm mt-1">> Starting request... ⏳</div>`;
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
+            const logs = document.getElementById('system-logs');
 
-            document.getElementById('download-area').classList.add('hidden');
-
-            if (logs.scrollTop) logs.scrollTop = logs.scrollHeight;
+            // État UI : Chargement
+            btn.disabled = true;
+            const originalIcon = btnIcon.innerHTML;
+            btnIcon.innerHTML = `<i class="fa-solid fa-circle-notch spinner"></i>`;
+            btnText.innerText = "Processing...";
+            
+            // On affiche la zone de logs mais on ne met pas le message "Initializing"
+            logs.classList.remove('hidden');
+            logs.innerHTML = ""; // On vide les logs précédents
+            
+            displayMessage('Generating your certificate, please wait...', 'info');
 
             const payload = {
                 matricule: matriculeEtudiant,
                 annee_universitaire: document.getElementById('anneeInput').value.trim(),
                 semestre: document.getElementById('semestreInput').value,
-                periodStart: "2023-09-01",
+                periodStart: "2023-09-01", 
                 periodEnd: "2024-01-31"
             };
 
@@ -166,51 +283,64 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    logs.innerHTML += `<div class="text-emerald-400 text-sm mt-1">> Request processed successfully.</div>`;
-                    if (data.requestId || data._id) {
-                        document.getElementById('download-link').href = `/api/attestations/${data.requestId || data._id}/download`;
-                        document.getElementById('download-area').classList.remove('hidden');
-                    }
+                    // On affiche directement le message de succès dans les logs
+                    logs.innerHTML += `<div class="text-emerald-400">> PDF Generated successfully!</div>`;
+                    displayMessage('Success! Your certificate is ready and has been emailed.', 'success');
+                    
+                    // Rechargement pour afficher dans la liste
+                    setTimeout(() => { window.location.reload(); }, 2500);
+
                 } else {
-                    logs.innerHTML += `<div class="text-red-400 text-sm mt-1">> Server error: ${data.error || 'Generation failed'}</div>`;
+                    displayMessage(data.error || 'Server rejected the request', 'error');
+                    logs.innerHTML += `<div class="text-red-400">> Error: ${data.error}</div>`;
+                    resetBtn(btn, btnText, btnIcon, originalIcon);
                 }
             } catch (err) {
-                logs.innerHTML += `<div class="text-red-400 text-sm mt-1">> Network error: ${err.message}</div>`;
+                displayMessage('Network error. Please try again.', 'error');
+                logs.innerHTML += `<div class="text-red-400">> Network Error: ${err.message}</div>`;
+                resetBtn(btn, btnText, btnIcon, originalIcon);
             }
+        }
 
-            if (logs.scrollTop) logs.scrollTop = logs.scrollHeight;
+        function resetBtn(btn, text, icon, oldIcon) {
+            btn.disabled = false;
+            text.innerText = "Generate Certificate";
+            icon.innerHTML = oldIcon;
         }
     </script>
-<div class="fixed bottom-6 right-6 z-50">
-    <button id="toggle-chat"
-            class="bg-blue-600 hover:bg-blue-700 text-white rounded-full h-16 w-16 shadow-[0_0_15px_rgba(37,99,235,0.5)] flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none relative">
-        <i class="fa-solid fa-comment-dots text-3xl"></i>
-        <span class="absolute top-0 right-0 flex h-4 w-4">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-gray-900"></span>
-        </span>
-    </button>
-</div>
-<%- include('partials/chat-widget') %> 
-<script>
-    const chatWindow = document.getElementById('ai-chat-window');
-    const toggleBtn  = document.getElementById('toggle-chat');
-    const closeBtn   = document.getElementById('close-chat');
-    const notificationPing = toggleBtn?.querySelector('.absolute.top-0');
 
-    function toggleChat() {
-        chatWindow.classList.toggle('active');
-        if (notificationPing) notificationPing.style.display = 'none';
-    }
+    <div class="fixed bottom-6 right-6 z-50">
+        <button id="toggle-chat"
+                class="bg-blue-600 hover:bg-blue-700 text-white rounded-full h-16 w-16 shadow-[0_0_15px_rgba(37,99,235,0.5)] flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none relative">
+            <i class="fa-solid fa-comment-dots text-3xl"></i>
+            <span class="absolute top-0 right-0 flex h-4 w-4">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-gray-900"></span>
+            </span>
+        </button>
+    </div>
 
-    if (toggleBtn) toggleBtn.addEventListener('click', toggleChat);
-    if (closeBtn)  closeBtn.addEventListener('click', toggleChat);
+    <%- include('partials/chat-widget') %> 
 
-    document.addEventListener('click', function(e) {
-        if (!chatWindow.contains(e.target) && !toggleBtn.contains(e.target)) {
-            chatWindow.classList.remove('active');
+    <script>
+        const chatWindow = document.getElementById('ai-chat-window');
+        const toggleBtn  = document.getElementById('toggle-chat');
+        const closeBtn   = document.getElementById('close-chat');
+        const notificationPing = toggleBtn?.querySelector('.absolute.top-0');
+
+        function toggleChat() {
+            chatWindow.classList.toggle('active');
+            if (notificationPing) notificationPing.style.display = 'none';
         }
-    });
-</script>
+
+        if (toggleBtn) toggleBtn.addEventListener('click', toggleChat);
+        if (closeBtn)  closeBtn.addEventListener('click', toggleChat);
+
+        document.addEventListener('click', function(e) {
+            if (chatWindow && !chatWindow.contains(e.target) && !toggleBtn.contains(e.target)) {
+                chatWindow.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>

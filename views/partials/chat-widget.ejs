@@ -1,5 +1,4 @@
 <div id="ai-chat-window" class="chat-window fixed bottom-24 right-6 w-96 h-[500px] bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 overflow-hidden z-50 flex flex-col">
-    <!-- Header -->
     <div class="bg-gray-900 p-4 border-b border-gray-700 flex justify-between items-center">
         <div class="flex items-center gap-3">
             <div class="bg-blue-600 p-2 rounded-lg">
@@ -15,25 +14,110 @@
         </button>
     </div>
 
-    <!-- Messages Area -->
-    <div class="flex-1 p-4 overflow-y-auto bg-gray-900 space-y-4">
-        <!-- Example messages – you can make this dynamic later -->
+    <div id="chat-messages-list" class="flex-1 p-4 overflow-y-auto bg-gray-900 space-y-4 flex flex-col">
         <div class="flex items-start gap-3">
-            <div class="bg-blue-600/20 p-3 rounded-lg max-w-[80%]">
+            <div class="bg-blue-600/20 p-3 rounded-lg max-w-[80%] border border-blue-500/20">
                 <p class="text-sm text-gray-200">Hello! How can I help you today?</p>
             </div>
         </div>
-        <!-- More messages can be appended here via JS -->
     </div>
 
-    <!-- Input Area -->
     <div class="p-4 border-t border-gray-700 bg-gray-800">
         <form id="chat-form" class="flex gap-2">
-            <input type="text" id="chat-input" placeholder="Type your message..." 
-                   class="flex-1 px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg transition">
+            <input type="text" id="chat-input" autocomplete="off" placeholder="Type your message..." 
+                   class="flex-1 px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-lg transition-all active:scale-95">
                 <i class="fa-solid fa-paper-plane"></i>
             </button>
         </form>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const messagesArea = document.getElementById('chat-messages-list');
+
+    // Fonction pour ajouter un message à l'écran
+    const appendMessage = (role, text) => {
+        const msgWrapper = document.createElement('div');
+        // On aligne à droite si c'est l'utilisateur, à gauche sinon
+        msgWrapper.className = `flex w-full ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`;
+        
+        const bubbleClass = role === 'user' 
+            ? 'bg-blue-600 text-white rounded-br-none' 
+            : 'bg-blue-600/20 text-gray-200 border border-blue-500/20 rounded-bl-none';
+
+        msgWrapper.innerHTML = `
+            <div class="${bubbleClass} p-3 rounded-xl max-w-[85%] shadow-sm">
+                <p class="text-sm leading-relaxed">${text}</p>
+            </div>
+        `;
+        
+        messagesArea.appendChild(msgWrapper);
+        // Scroll automatique vers le bas
+        messagesArea.scrollTo({
+            top: messagesArea.scrollHeight,
+            behavior: 'smooth'
+        });
+    };
+
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Récupération sécurisée de l'ID (Passé par EJS)
+        const studentId = "<%= user._id %>"; 
+
+        // 1. Afficher le message utilisateur
+        appendMessage('user', message);
+        chatInput.value = '';
+
+        // 2. Afficher l'indicateur de chargement
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = "flex justify-start items-center gap-2 text-gray-500 text-xs italic ml-2";
+        loadingDiv.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> Assistant is typing...`;
+        messagesArea.appendChild(loadingDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+
+        try {
+            const response = await fetch('/api/chat/message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    message: message,
+                    studentId: studentId 
+                })
+            });
+
+            const data = await response.json();
+            
+            // Retirer l'indicateur de chargement
+            loadingDiv.remove();
+
+            if (data.reply) {
+                appendMessage('bot', data.reply);
+            } else {
+                appendMessage('bot', "I couldn't process that. Please try again.");
+            }
+
+        } catch (error) {
+            console.error('Erreur Chat:', error);
+            loadingDiv.remove();
+            appendMessage('bot', "Sorry, the service is temporarily unavailable.");
+        }
+    });
+});
+</script>
+
+<style>
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out forwards;
+    }
+</style>

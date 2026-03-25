@@ -4,26 +4,32 @@ const { askOllama } = require('./ollamaService');
 const { generateAttestationPDF } = require('./pdfService');
 const { sendAttestationReadyEmail } = require('./emailService');
 
+/**
+ * Traite une demande d'attestation et met à jour son statut.
+ * @param {string} requestId - ID de la demande
+ */
 async function processAttestationRequest(requestId) {
   try {
+    // Récupérer la demande avec étudiant et inscription
     const request = await AttestationRequest.findById(requestId)
       .populate('student')
       .populate('enrollment');
 
-    if (!request) {
-      return;
-    }
+    if (!request) return;
 
+    // Récupérer les absences sur la période
     const absences = await Absence.find({
       student: request.student._id,
       date: { $gte: request.periode_debut, $lte: request.periode_fin }
     });
 
-    const totalSessions = 20;
-    const unjustifiedAbsences = absences.filter(a => a.isJustified === false).length;
+    // Calcul du taux de présence
+    const totalSessions = absences.length > 0 ? absences.length : 20; // ajustable si tu as le total réel
+    const unjustifiedAbsences = absences.filter(a => !a.isJustified).length;
     const effectivePresents = totalSessions - unjustifiedAbsences;
     const taux = totalSessions > 0 ? (effectivePresents / totalSessions) * 100 : 0;
 
+    // Construire le prompt pour l'agent Gemma
     const prompt = `
 Tu es un agent administratif universitaire précis et strict.
 Tu dois analyser les données suivantes et décider si l'attestation de présence peut être délivrée.
@@ -44,12 +50,12 @@ Statistiques d'assiduité :
 - Séances considérées comme suivies : ${effectivePresents}
 - Taux de présence effectif : ${taux.toFixed(2)} %
 
-Règles officielles (à respecter strictement) :
+Règles officielles :
 1. Taux ≥ 75% → approved
 2. Taux < 75% → rejected
 3. Si données insuffisantes (total < 5 séances) → pending_manual
 
-Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sans \`\`\`json ni balises :
+Réponds UNIQUEMENT avec un JSON valide, sans texte ni balises :
 
 {
   "decision": "approved" | "rejected" | "pending_manual" | "error",
@@ -59,8 +65,10 @@ Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sans 
 }
 `;
 
+    // Appel à l'agent IA
     const agentResponse = await askOllama(prompt);
 
+    // Parser la réponse JSON de manière robuste
     let result;
     try {
       const cleaned = agentResponse
@@ -70,19 +78,20 @@ Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sans 
         .replace(/[\n\r]+/g, ' ');
 
       result = JSON.parse(cleaned);
-    } catch (parseError) {
+    } catch {
       result = { decision: 'error', reason: 'Réponse non-JSON valide' };
     }
 
+    // Mettre à jour la demande
     request.statut = result.decision;
     request.motif_rejet = result.reason || 'Décision automatique';
-
     request.agent_trace = {
       tauxPresence: result.tauxPresence ?? parseFloat(taux.toFixed(2)),
       raw: agentResponse,
       confidence: result.confidence ?? 0.8
     };
 
+    // Générer PDF uniquement si approuvé
     if (result.decision === 'approved') {
       try {
         const pdfPath = await generateAttestationPDF(request, request.student, request.enrollment);
@@ -96,6 +105,7 @@ Réponds UNIQUEMENT avec un JSON valide, sans aucun texte avant ou après, sans 
     }
 
     await request.save();
+
   } catch (err) {
     console.error(`Erreur globale traitement attestation ${requestId} :`, err.message);
   }
