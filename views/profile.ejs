@@ -27,44 +27,104 @@
 </head>
 <body class="bg-gray-900 min-h-screen font-sans flex flex-col text-gray-200">
 
-    <!-- Reusable Navbar -->
-    <%- include('partials/navbar') %>
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/" class="flex-shrink-0 flex items-center gap-3 text-xl font-bold text-white">
+                        <div class="bg-blue-600 p-2 rounded-lg">
+                            <i class="fa-solid fa-graduation-cap text-white"></i>
+                        </div>
+                        CampusHub
+                    </a>
+                    <div class="hidden md:flex space-x-2">
+                        <a href="/" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Home</a>
+                        <a href="/" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Faculty</a>
+                        <a href="/about" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">
+                            About CampusHub
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4 relative">
+                    <div class="hidden sm:flex flex-col items-end">
+                        <span class="text-sm font-medium text-white">
+                            <%= user ? user.lastName + ' ' + user.firstName : 'Student' %>
+                        </span>
+                        <span class="text-xs text-blue-400">
+                            ID: <%= user && user.nationalId ? user.nationalId : 'N/A' %>
+                        </span>
+                    </div>
+
+                    <div class="relative">
+                        <button id="user-menu-button" 
+                                class="flex items-center gap-2 focus:outline-none group">
+                            <img class="h-10 w-10 rounded-full object-cover border-2 border-gray-600 group-hover:border-blue-500 transition"
+                                 src="<%= user && user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatar.png' %>"
+                                 alt="Profile">
+                            <i class="fa-solid fa-chevron-down text-gray-400 text-sm group-hover:text-white transition hidden md:block"></i>
+                        </button>
+
+                        <div id="user-dropdown" 
+                             class="hidden absolute right-0 top-14 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
+                            
+                            <div class="px-4 py-3 bg-gray-900/50 border-b border-gray-700">
+                                <p class="text-sm text-gray-400">Signed in as</p>
+                                <p class="text-sm font-medium text-white truncate">
+                                    <%= user ? user.email : 'student@campushub.com' %>
+                                </p>
+                            </div>
+
+                            <div class="py-2">
+                                <a href="/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">
+                                    <i class="fa-solid fa-user w-5 text-center"></i>
+                                    My Profile
+                                </a>
+
+                                <div class="border-t border-gray-700 my-2"></div>
+
+                                <a href="/logout" class="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30 hover:text-red-300 transition">
+                                    <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
+                                    Sign Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        <!-- Page Header -->
         <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-white">My Profile</h1>
                 <p class="text-gray-400 mt-1">Manage your personal information and account settings</p>
             </div>
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-blue-900/20">
-                <i class="fa-solid fa-floppy-disk"></i>
-                Save Changes
-            </button>
         </header>
 
-        <!-- Two-column layout on larger screens -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            <!-- Left column - Profile Card -->
             <div class="lg:col-span-1 space-y-6">
 
-                <!-- Profile Picture & Basic Info -->
                 <section class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg p-6 text-center">
                     <div class="relative inline-block">
-                        <img class="h-32 w-32 rounded-full object-cover border-4 border-blue-600/40 mx-auto shadow-xl"
-                             src="<%= etudiant.profilePicture || '/uploads/default-avatars/default.png' %>"
+                        <img id="profile-pic-preview" class="h-32 w-32 rounded-full object-cover border-4 border-blue-600/40 mx-auto shadow-xl"
+                             src="<%= user && user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatar.png' %>"
                              alt="Profile Picture">
                         <label for="profile-pic-upload" class="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full cursor-pointer shadow-md transition">
                             <i class="fa-solid fa-camera text-sm"></i>
-                            <input type="file" id="profile-pic-upload" class="hidden" accept="image/*">
+                            <input type="file" id="profile-pic-upload" name="profilePicture" class="hidden" accept="image/*">
                         </label>
                     </div>
-                    <h2 class="text-2xl font-bold mt-4"><%= etudiant.firstName %> <%= etudiant.lastName %></h2>
-                    <p class="text-gray-400 mt-1"><%= etudiant.email %></p>
-                    <p class="text-sm text-blue-400 mt-1">Student ID: <%= etudiant.nationalId || etudiant.studentId || '—' %></p>
+                    <h2 class="text-2xl font-bold mt-4"><%= user ? user.firstName : '' %> <%= user ? user.lastName : '' %></h2>
+                    <p class="text-gray-400 mt-1"><%= user ? user.email : '' %></p>
+                    <p class="text-sm text-blue-400 mt-1">
+                        Student ID: <%= user && (user.nationalId || user.studentId) || '—' %>
+                    </p>
                 </section>
+
                 <section class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg p-6">
                     <h3 class="text-lg font-semibold mb-5 flex items-center gap-2">
                         <i class="fa-solid fa-chart-line text-blue-400"></i>
@@ -73,30 +133,30 @@
                     <div class="space-y-5 text-sm">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-300">Attendance Rate</span>
-<span class="text-lg font-bold <%= parseFloat(etudiant.attendanceRate) >= 85 ? 'text-green-400' : 'text-red-400' %>">
-    <%= (etudiant.attendanceRate && !isNaN(parseFloat(etudiant.attendanceRate))) ? parseFloat(etudiant.attendanceRate).toFixed(1) : '—' %> %
-</span>
+                            <span class="text-lg font-bold <%= parseFloat(user?.attendanceRate || 0) >= 85 ? 'text-green-400' : 'text-red-400' %>">
+                                <%= (user?.attendanceRate && !isNaN(parseFloat(user.attendanceRate))) 
+                                    ? parseFloat(user.attendanceRate).toFixed(1) 
+                                    : '—' %> %
+                            </span>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-300">Active Semester    </span>
+                            <span class="text-gray-300">Active Semester</span>
                             <span class="text-white font-medium">
-                                <%= etudiant.currentSemester || 'No active semester' %>
+                                <%= user?.currentSemester || 'No active semester' %>
                             </span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-300">Member Since</span>
                             <span class="text-gray-400">
-                                <%= new Date(etudiant.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) %>
+                                <%= user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : '—' %>
                             </span>
                         </div>
                     </div>
                 </section>
-                
             </div>
 
-<div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 space-y-6">
 
-                <!-- Personal Information Form -->
                 <form id="profile-form" action="/profile" method="POST" class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
                     <div class="p-6 border-b border-gray-700">
                         <h3 class="text-lg font-semibold flex items-center gap-2">
@@ -108,29 +168,35 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">First Name</label>
-                                <input name="firstName" type="text" value="<%= etudiant.firstName %>" required
+                                <input name="firstName" type="text" value="<%= user ? user.firstName : '' %>" required
                                        class="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-blue-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
-                                <input name="lastName" type="text" value="<%= etudiant.lastName %>" required
+                                <input name="lastName" type="text" value="<%= user ? user.lastName : '' %>" required
                                        class="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-blue-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                                <input name="email" type="email" value="<%= etudiant.email %>" required
+                                <input name="email" type="email" value="<%= user ? user.email : '' %>" required
                                        class="w-full px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white focus:border-blue-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">National ID (non-editable)</label>
-                                <input type="text" value="<%= etudiant.nationalId %>" readonly
+                                <input type="text" value="<%= user && user.nationalId || '' %>" readonly
                                        class="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 cursor-not-allowed">
                             </div>
                         </div>
                     </div>
+                    <div class="p-6 border-t border-gray-700 bg-gray-900 flex justify-end">
+                        <button type="submit" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            Save Changes
+                        </button>
+                    </div>
                 </form>
 
-                <!-- Change Password -->
                 <section class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
                     <div class="p-6 border-b border-gray-700">
                         <h3 class="text-lg font-semibold flex items-center gap-2">
@@ -163,54 +229,96 @@
         </div>
     </main>
 
-    <!-- Floating Chat Button & Window -->
-    <%- include('partials/chat-widget') %>   
+
+
     <script>
-    const chatWindow = document.getElementById('ai-chat-window');
-    const toggleBtn  = document.getElementById('toggle-chat');
-    const closeBtn   = document.getElementById('close-chat');
-    const notificationPing = toggleBtn?.querySelector('.absolute.top-0');
+        // --- Dropdown Logic ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const button = document.getElementById('user-menu-button');
+            const dropdown = document.getElementById('user-dropdown');
 
-    function toggleChat() {
-        chatWindow.classList.toggle('active');
-        // Hide notification dot forever after first open
-        if (notificationPing) notificationPing.style.display = 'none';
-    }
+            if (button && dropdown) {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
 
-    if (toggleBtn) toggleBtn.addEventListener('click', toggleChat);
-    if (closeBtn)  closeBtn.addEventListener('click', toggleChat);
-
-    // Optional: close when clicking outside (nice UX)
-    document.addEventListener('click', function(e) {
-        if (!chatWindow.contains(e.target) && !toggleBtn.contains(e.target)) {
-            chatWindow.classList.remove('active');
-        }
-    });
-</script>
-<script>
-    // Handle profile form with AJAX
-    document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData);
-
-        try {
-            const res = await fetch('/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await res.json();
-
-            if (result.success) {
-                alert('Profile updated successfully!');
-            } else {
-                alert(result.error || 'Failed to update profile');
+                document.addEventListener('click', (e) => {
+                    if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
             }
-        } catch (err) {
-            alert('Network error');
+        });
+
+        // --- Chat toggle logic ---
+        const chatWindow = document.getElementById('ai-chat-window');
+        const toggleBtn  = document.getElementById('toggle-chat');
+        const closeBtn   = document.getElementById('close-chat');
+
+        if (toggleBtn && closeBtn && chatWindow) {
+            function toggleChat() {
+                chatWindow.classList.toggle('active');
+            }
+            toggleBtn.addEventListener('click', toggleChat);
+            closeBtn.addEventListener('click', toggleChat);
         }
-    });
-</script>
+
+        // --- Profile Picture Preview ---
+        const profilePicInput = document.getElementById('profile-pic-upload');
+        const profilePicPreview = document.getElementById('profile-pic-preview');
+
+        if (profilePicInput && profilePicPreview) {
+            profilePicInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Update the image src with the local file preview
+                        profilePicPreview.src = e.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // --- Profile Form AJAX (Updated for File Uploads) ---
+        const profileForm = document.getElementById('profile-form');
+        
+        if (profileForm) {
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Create FormData from the main form (grabs firstName, lastName, email)
+                const formData = new FormData(e.target);
+
+                // Grab the file from the picture input (which is outside the form) and append it
+                if (profilePicInput && profilePicInput.files.length > 0) {
+                    formData.append('profilePicture', profilePicInput.files[0]);
+                }
+
+                try {
+                    // Send request natively via FormData (browser automatically sets multipart/form-data boundaries)
+                    const res = await fetch('/profile', {
+                        method: 'POST',
+                        body: formData 
+                    });
+                    
+                    const result = await res.json();
+
+                    if (result.success) {
+                        alert('Profile updated successfully!');
+                        // Reload the page to sync all top-nav avatars and text
+                        window.location.reload(); 
+                    } else {
+                        alert(result.error || 'Failed to update profile');
+                    }
+                } catch (err) {
+                    alert('Network error while saving changes.');
+                    console.error(err);
+                }
+            });
+        }
+    </script>
 </body>
 </html>

@@ -27,7 +27,7 @@ app.use(cookieParser());
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-
+app.use('/uploads', express.static('uploads'));
 app.use(express.static('public'));
 // Route principale : Portail ou Login
 app.get('/', authMiddleware, (req, res) => {

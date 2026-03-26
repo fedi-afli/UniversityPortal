@@ -17,7 +17,7 @@
     <div id="chat-messages-list" class="flex-1 p-4 overflow-y-auto bg-gray-900 space-y-4 flex flex-col">
         <div class="flex items-start gap-3">
             <div class="bg-blue-600/20 p-3 rounded-lg max-w-[80%] border border-blue-500/20">
-                <p class="text-sm text-gray-200">Hello! How can I help you today?</p>
+                <p class="text-sm text-gray-200">Hello <%= user && user.firstName ? user.firstName : 'there' %>! How can I help you today?</p>
             </div>
         </div>
     </div>
@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fonction pour ajouter un message à l'écran
     const appendMessage = (role, text) => {
         const msgWrapper = document.createElement('div');
-        // On aligne à droite si c'est l'utilisateur, à gauche sinon
         msgWrapper.className = `flex w-full ${role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`;
         
         const bubbleClass = role === 'user' 
@@ -56,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         messagesArea.appendChild(msgWrapper);
-        // Scroll automatique vers le bas
         messagesArea.scrollTo({
             top: messagesArea.scrollHeight,
             behavior: 'smooth'
@@ -68,8 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = chatInput.value.trim();
         if (!message) return;
 
-        // Récupération sécurisée de l'ID (Passé par EJS)
-        const studentId = "<%= user._id %>"; 
+        // Récupération sécurisée de l'ID
+        const studentId = "<%= user && user._id ? user._id : '' %>"; 
 
         // 1. Afficher le message utilisateur
         appendMessage('user', message);

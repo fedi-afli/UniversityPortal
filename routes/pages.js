@@ -5,18 +5,48 @@ const Absence = require('../models/Absence');
 const Enrollment = require('../models/Enrollment');
 const bcrypt = require('bcryptjs');
 const { Student } = require('../models/Roles');
-router.get('/', authMiddleware, (req, res) => {
-    res.render('main', { etudiant: req.user });
+
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// --- MULTER CONFIGURATION ---
+// Set the physical upload directory to public/uploads/profile-pictures
+const uploadDir = path.join('public', 'uploads', 'profile-pictures');
+
+// Ensure the directory exists
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir); 
+    },
+    filename: function (req, file, cb) {
+        // Create a unique filename: studentID-timestamp.extension
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, req.user._id + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
 });
 
+const upload = multer({ storage: storage });
+
+// --- ROUTES ---
+
+// Home / Dashboard
+router.get('/', authMiddleware, (req, res) => {
+    res.render('main', { user: req.user });
+});
+
+// GET Profile Page
 router.get('/profile', authMiddleware, async (req, res) => {
     try {
         const student = req.user;
 
-        // Your attendance & semester calculation here...
         const absences = await Absence.find({ student: student._id });
         const unjustified = absences.filter(a => !a.isJustified).length;
-        const total = absences.length || 1; // avoid division by zero
+        const total = absences.length || 1;
         const attendanceRate = ((total - unjustified) / total) * 100;
 
         const active = await Enrollment.findOne({
@@ -25,82 +55,51 @@ router.get('/profile', authMiddleware, async (req, res) => {
         });
 
         res.render('profile', {
-            etudiant: {
-                ...student.toObject(),
+            user: {
+                ...student.toObject(),                    
                 attendanceRate: attendanceRate.toFixed(1),
-                currentSemester: active ? `${active.semester} ${active.academicYear}` : 'None'
+                currentSemester: active 
+                    ? `${active.semester} ${active.academicYear}` 
+                    : 'No active semester'
             }
         });
     } catch (err) {
-        console.error(err);
+        console.error('Profile route error:', err);
         res.status(500).send('Server error');
     }
 });
 
-// POST /profile → save changes (this was missing or not working)
-router.post('/profile', authMiddleware, async (req, res) => {
+// POST Profile Page
+router.post('/profile', authMiddleware, upload.single('profilePicture'), async (req, res) => {
     try {
         const { firstName, lastName, email } = req.body;
-        const student = req.user;
 
-        if (!firstName?.trim() || !lastName?.trim() || !email?.trim()) {
-            return res.status(400).json({ success: false, error: 'All fields are required' });
+        const updateData = {
+            firstName,
+            lastName,
+            email
+        };
+
+        // If a file was uploaded, format the web path for the database
+        if (req.file) {
+            // Since the file is physically in 'public/uploads/profile-pictures',
+            // and 'public' is usually the static root, we only save the relative web path
+            updateData.profilePicture = '/uploads/profile-pictures/' + req.file.filename;
         }
 
-        // Optional: check email uniqueness if changed
-        if (email !== student.email) {
-            const exists = await Student.findOne({ email, _id: { $ne: student._id } });
-            if (exists) {
-                return res.status(400).json({ success: false, error: 'Email already used' });
-            }
-        }
+        await Student.findByIdAndUpdate(req.user._id, updateData, { new: true });
 
-        student.firstName = firstName.trim();
-        student.lastName  = lastName.trim();
-        student.email     = email.trim();
+        res.json({ success: true, message: 'Profile updated successfully' });
 
-        await student.save();
-
-        res.json({ success: true, message: 'Profile updated' });
     } catch (err) {
-        console.error('Profile update error:', err);
-        res.status(500).json({ success: false, error: 'Server error' });
+        console.error('Update profile error:', err);
+        res.status(500).json({ success: false, error: 'Failed to update profile data.' });
     }
 });
 
-// POST /profile/password → change password
-router.post('/profile/password', authMiddleware, async (req, res) => {
-    try {
-        const { currentPassword, newPassword } = req.body;
-        const student = req.user;
-
-        // Verify current password
-        const isMatch = await bcrypt.compare(currentPassword, student.password);
-        if (!isMatch) {
-            return res.status(400).json({ success: false, error: 'Current password is incorrect' });
-        }
-
-        // Validate new password
-        if (!newPassword || newPassword.length < 8) {
-            return res.status(400).json({ success: false, error: 'New password must be at least 8 characters' });
-        }
-
-        // Hash and update
-        const salt = await bcrypt.genSalt(10);
-        student.password = await bcrypt.hash(newPassword, salt);
-        await student.save();
-
-        res.json({ success: true, message: 'Password updated successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Server error' });
-    }
-});
-
+// About Page
 router.get('/about', authMiddleware, (req, res) => {
-    res.render('about', { etudiant: req.user });
+    res.render('about', { user: req.user });
 });
-
-
 
 module.exports = router;

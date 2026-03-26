@@ -47,10 +47,9 @@ const deleteFile = (filePath) => {
 // --- SIGNUP ROUTE ---
 router.post('/', upload, async (req, res) => {
     try {
-        const { cin, nom, prenom, email, password } = req.body;
-
+const { cin, nom, prenom, email, password, dateOfBirth, location, gender } = req.body;
         // Basic validation
-        if (!cin || !nom || !prenom || !email || !password) {
+        if (!cin || !nom || !prenom || !email || !password|| !dateOfBirth) {
             if (req.file) deleteFile(req.file.path);
             return sendOnce(() => res.status(400).json({ message: 'Please fill all required fields.' }));
         }
@@ -85,7 +84,7 @@ router.post('/', upload, async (req, res) => {
         // Profile picture
         const profilePicturePath = req.file 
             ? `/uploads/profile-pictures/${req.file.filename}` 
-            : '/uploads/default-avatars/default.png';
+            : '/uploads/profile-pictures/default-avatar.png';
 
         // Create student account
         const student = new Student({
@@ -97,6 +96,9 @@ router.post('/', upload, async (req, res) => {
             isVerified: false,
             nationalId: cin,
             inscrption: enrollment._id,
+            dateOfBirth: dateOfBirth,
+            location: location,
+            gender: gender,
             verificationToken // ✅ store the token here
         });
 

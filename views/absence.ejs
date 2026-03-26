@@ -34,31 +34,74 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center space-x-8">
-                    <a href="/" class="flex-shrink-0 flex items-center gap-3 text-xl font-bold text-white hover:opacity-80 transition">
+                    <a href="/" class="flex-shrink-0 flex items-center gap-3 text-xl font-bold text-white">
                         <div class="bg-blue-600 p-2 rounded-lg">
                             <i class="fa-solid fa-graduation-cap text-white"></i>
                         </div>
                         CampusHub
                     </a>
                     <div class="hidden md:flex space-x-2">
-                        <a href="/" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Dashboard</a>
-                        <a href="/absences" class="text-white bg-gray-900 px-3 py-2 rounded-md text-sm font-medium border border-gray-700 transition">Absences</a>
+                        <a href="/" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Home</a>
+                        <a href="/" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Faculty</a>
+                        <a href="/about" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">
+                            About CampusHub
+                        </a>
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-4">
+                <!-- User Section with Dropdown -->
+                <div class="flex items-center gap-4 relative">
                     <div class="hidden sm:flex flex-col items-end">
-                        <span class="text-sm font-medium text-white"><%= user && user.firstName && user.lastName? user.firstName + ' ' + user.lastName : 'Student Name' %></span>
-                        <span class="text-xs text-blue-400">ID: <%= user && user.nationalId ? user.nationalId : 'Student Id' %></span>
+                        <span class="text-sm font-medium text-white">
+                            <%= user ? user.lastName + ' ' + user.firstName : 'Student' %>
+                        </span>
+                        <span class="text-xs text-blue-400">
+                            ID: <%= user && user.nationalId ? user.nationalId : 'N/A' %>
+                        </span>
                     </div>
-                    <img class="h-10 w-10 rounded-full border-2 border-gray-600 object-cover" 
-                         src="<%= user && user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatars.png' %>" 
-                         alt="Profile Picture">
+
+                    <!-- Profile Picture with Dropdown -->
+                    <div class="relative">
+                        <button id="user-menu-button" 
+                                class="flex items-center gap-2 focus:outline-none group">
+                            <img class="h-10 w-10 rounded-full object-cover border-2 border-gray-600 group-hover:border-blue-500 transition"
+                                 src="<%= user && user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatar.png' %>"
+                                 alt="Profile">
+                            <i class="fa-solid fa-chevron-down text-gray-400 text-sm group-hover:text-white transition hidden md:block"></i>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div id="user-dropdown" 
+                             class="hidden absolute right-0 top-14 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
+                            
+                            <div class="px-4 py-3 bg-gray-900/50 border-b border-gray-700">
+                                <p class="text-sm text-gray-400">Signed in as</p>
+                                <p class="text-sm font-medium text-white truncate">
+                                    <%= user ? user.email : 'student@campushub.com' %>
+                                </p>
+                            </div>
+
+                            <div class="py-2">
+                                <a href="/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">
+                                    <i class="fa-solid fa-user w-5 text-center"></i>
+                                    My Profile
+                                </a>
+
+                                
+
+                                <div class="border-t border-gray-700 my-2"></div>
+
+                                <a href="/logout" class="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30 hover:text-red-300 transition">
+                                    <i class="fa-solid fa-right-from-bracket w-5 text-center"></i>
+                                    Sign Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
-
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
         
 <header>
@@ -321,6 +364,24 @@
     </div>
 </div>
    <script>
+    // Dropdown Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const button = document.getElementById('user-menu-button');
+        const dropdown = document.getElementById('user-dropdown');
+
+        if (button && dropdown) {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!button.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+    });
 document.addEventListener("DOMContentLoaded", () => {
     const subjectFilter = document.getElementById("subjectFilter");
     const teacherFilter = document.getElementById("teacherFilter");

@@ -20,23 +20,25 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
         body {
             font-family: 'Inter', sans-serif;
             background-color: #0d1117;
         }
+        
         /* Hide scrollbar for clean UI */
         ::-webkit-scrollbar {
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #0d1117; 
+            background: #0d1117;
         }
         ::-webkit-scrollbar-thumb {
-            background: #374151; 
+            background: #374151;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #4B5563; 
+            background: #4B5563;
         }
         
         /* Loading Spinner */
@@ -130,19 +132,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">National ID</label>
-                    <input type="text" name="nationalId" required placeholder="e.g., 12345678" 
+                    <input type="text" name="cin" required placeholder="e.g., 12345678" 
                            class="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
                 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Last Name</label>
-                        <input type="text" name="lastName" required 
+                        <input type="text" name="nom" required 
                                class="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">First Name</label>
-                        <input type="text" name="firstName" required 
+                        <input type="text" name="prenom" required 
                                class="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none">
                     </div>
                 </div>
@@ -210,7 +212,7 @@
 
         <div class="mt-8 pt-6 border-t border-gray-700 text-center">
             <p id="toggle-prompt" class="text-sm text-gray-400">
-                Don't have an account? 
+                Don't have an account?
                 <button type="button" id="toggleButton" class="text-blue-400 hover:text-blue-300 font-bold ml-1 transition focus:outline-none">
                     Sign Up
                 </button>
@@ -235,7 +237,7 @@
         const uploadPlaceholder = document.getElementById('upload-placeholder');
 
         let isSignIn = true;
-        
+
         // Loading state helper function
         function showLoading(button, show = true) {
             if (show) {
@@ -269,9 +271,8 @@
 
         function displayMessage(message, type) {
             messageBox.textContent = message;
-
             let classes = 'fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-full text-sm font-medium shadow-xl transition-all duration-300';
-
+            
             if (type === 'error') {
                 classes += ' bg-red-900 text-red-100 border border-red-700';
             } else if (type === 'success') {
@@ -282,7 +283,7 @@
 
             messageBox.className = classes;
             messageBox.classList.remove('hidden');
-          
+            
             setTimeout(() => {
                 messageBox.classList.add('hidden');
             }, 5000);
@@ -290,7 +291,6 @@
 
         function toggleAuthMode() {
             isSignIn = !isSignIn;
-            
             if (isSignIn) {
                 signInForm.classList.remove('hidden');
                 signUpForm.classList.add('hidden');
@@ -356,11 +356,10 @@
                     return; 
                 }
                 
-                const result = await response.json(); 
+                const result = await response.json();
                 
                 if (response.ok) {
                     displayMessage('Login successful', 'success');
-         
                     if (result.redirectUrl) {
                          setTimeout(() => { window.location.href = result.redirectUrl; }, 1000);
                     }
@@ -384,6 +383,7 @@
                 });
 
                 const contentType = response.headers.get('content-type');
+                
                 if (contentType && contentType.includes('application/json')) {
                     const result = await response.json();
                     
