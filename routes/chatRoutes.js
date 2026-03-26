@@ -2,25 +2,26 @@ const express = require('express');
 const router = express.Router();
 const { askOllama } = require('../services/ollamaService');
 const attestationController = require('../controllers/attestationController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-router.post('/message', async (req, res) => {
+router.post('/message', authMiddleware,async (req, res) => {
     try {
         const { message } = req.body;
-
+        console.log("la message : " +message)
         const extractionPrompt = `
-        Analyse le message suivant : "${message}"
-        Tu es un extracteur de données strict. 
-        
-        INSTRUCTIONS :
-        1. "year" : Trouve l'année universitaire (ex: 2024-2025).
-        2. "semester" : Choisis UNIQUEMENT entre "S1", "S2", ou "Annual". 
-           - Si l'utilisateur mentionne "semestre 1" ou "premier semestre" -> "S1"
-           - Si l'utilisateur mentionne "semestre 2" ou "deuxième semestre" -> "S2"
-           - Si l'utilisateur mentionne "annuel" ou "toute l'année" -> "Annual"
-        3. "intent" : "request_attestation" si c'est une demande de document.
+        Analyze the following message: "${message}"
+        You are a strict data extractor.
 
-        RÉPONDS UNIQUEMENT PAR UN JSON SANS TEXTE AVANT OU APRÈS.
-        FORMAT : {"year": "...", "semester": "...", "intent": "..."}
+        INSTRUCTIONS:
+        1. "year": Find the academic year (e.g., 2024-2025).
+        2. "semester": Choose ONLY between "S1", "S2", or "Annual".
+        - If the user mentions "semester 1" or "first semester" -> "S1"
+        - If the user mentions "semester 2" or "second semester" -> "S2"
+        - If the user mentions "annual" or "full year" -> "Annual"
+        3. "intent": "request_attestation" if it is a request for a document.
+
+        RESPOND ONLY WITH A JSON WITHOUT ANY TEXT BEFORE OR AFTER.
+        FORMAT: {"year": "...", "semester": "...", "intent": "..."}
         `;
         
         const aiResponse = await askOllama(extractionPrompt);
