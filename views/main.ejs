@@ -141,14 +141,16 @@ src="<%= user && user.profilePicture ?  user.profilePicture : '/default-avatar.p
             <div class="flex-grow p-4 overflow-y-auto bg-gray-900 flex flex-col gap-4" id="chat-messages">
                 <div class="flex items-end gap-2">
                     <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm">
-                        Hello <%= user ? user.prenom : 'there' %>! 👋 I'm your virtual assistant. How can I help you today? (e.g., "Where is the administration office?", "How do I justify an absence?")
+                        Hello <%= user ? user.firstName : 'there' %>! 👋 I'm your virtual assistant. How can I help you today? 
                     </div>
                 </div>
             </div>
+            
 
             <div class="p-3 bg-gray-800 border-t border-gray-700 flex items-center gap-2">
-                <input type="text" placeholder="Type your message..." class="flex-grow bg-gray-900 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-full px-4 py-2.5 text-sm outline-none transition-all placeholder-gray-500">
-                <button class="bg-blue-600 text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-blue-700 transition flex-shrink-0 shadow-md">
+                <input type="text" id="chat-input" placeholder="Type your message..." class="flex-grow bg-gray-900 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-full px-4 py-2.5 text-sm outline-none transition-all placeholder-gray-500">
+                
+                <button id="send-message-btn" class="bg-blue-600 text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-blue-700 transition flex-shrink-0 shadow-md">
                     <i class="fa-solid fa-paper-plane text-sm"></i>
                 </button>
             </div>
@@ -163,21 +165,129 @@ src="<%= user && user.profilePicture ?  user.profilePicture : '/default-avatar.p
         </button>
     </div>
 
-    <script>
-        const chatWindow = document.getElementById('ai-chat-window');
-        const toggleBtn = document.getElementById('toggle-chat');
-        const closeBtn = document.getElementById('close-chat');
-        const notificationPing = toggleBtn.querySelector('.absolute.top-0');
+<script>
+    const chatWindow = document.getElementById('ai-chat-window');
+    const toggleBtn = document.getElementById('toggle-chat');
+    const closeBtn = document.getElementById('close-chat');
+    const notificationPing = toggleBtn.querySelector('.absolute.top-0');
 
-        function toggleChat() {
-            chatWindow.classList.toggle('active');
-            // Hide notification badge forever once opened
-            if (notificationPing) notificationPing.style.display = 'none';
+    function toggleChat() {
+        chatWindow.classList.toggle('active');
+        if (notificationPing) notificationPing.style.display = 'none';
+    }
+
+    toggleBtn.addEventListener('click', toggleChat);
+    closeBtn.addEventListener('click', toggleChat);
+
+    // --- CHAT LOGIC ---
+
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-message-btn');
+    const chatMessagesContainer = document.getElementById('chat-messages');
+
+    // Get the student ID from EJS
+    const studentId = "<%= user && user._id ? user._id : '' %>"; 
+
+    // Function to scroll to the bottom of the chat
+    function scrollToBottom() {
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+    }
+
+    // Render User Message
+    function appendUserMessage(text) {
+        const msgHTML = `
+        <div class="flex items-end gap-2 justify-end mt-4">
+            <div class="bg-gray-700 text-white rounded-2xl rounded-br-sm p-3 text-sm max-w-[85%] shadow-sm">
+                ${text}
+            </div>
+        </div>`;
+        chatMessagesContainer.insertAdjacentHTML('beforeend', msgHTML);
+        scrollToBottom();
+    }
+
+    // Render AI Message
+    function appendAIMessage(text) {
+        // Simple replace to convert newlines (\n) to <br> tags for HTML
+        const formattedText = text.replace(/\n/g, '<br>');
+        const msgHTML = `
+        <div class="flex items-end gap-2 mt-4">
+            <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm">
+                ${formattedText}
+            </div>
+        </div>`;
+        chatMessagesContainer.insertAdjacentHTML('beforeend', msgHTML);
+        scrollToBottom();
+    }
+
+    // Show "Working on your request" loader
+    function showLoader() {
+        const loaderHTML = `
+        <div id="ai-loader" class="flex items-end gap-2 mt-4">
+            <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm shadow-sm flex items-center gap-2 opacity-80">
+                <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                <span class="animate-pulse">Working on your request...</span>
+            </div>
+        </div>`;
+        chatMessagesContainer.insertAdjacentHTML('beforeend', loaderHTML);
+        scrollToBottom();
+    }
+
+    // Remove the loader
+    function removeLoader() {
+        const loader = document.getElementById('ai-loader');
+        if (loader) loader.remove();
+    }
+
+    // Handle sending the message
+    async function handleSendMessage() {
+        const messageText = chatInput.value.trim();
+        if (!messageText) return;
+
+        // 1. Show user message and clear input
+        appendUserMessage(messageText);
+        chatInput.value = '';
+
+        // 2. Show loader
+        showLoader();
+
+        try {
+            // 3. Send to your Express backend route
+            const response = await fetch('/api/assistantAgent/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: messageText,
+                    student_id: studentId
+                })
+            });
+
+            const data = await response.json();
+            
+            // 4. Remove loader and show AI response
+            removeLoader();
+            
+            if (data.response) {
+                appendAIMessage(data.response);
+            } else {
+                appendAIMessage("Received an unexpected format from the server.");
+            }
+
+        } catch (error) {
+            console.error('Chat Error:', error);
+            removeLoader();
+            appendAIMessage("Sorry, I'm having trouble connecting to the server right now. Please try again later.");
         }
+    }
 
-        toggleBtn.addEventListener('click', toggleChat);
-        closeBtn.addEventListener('click', toggleChat);
-        
-    </script>
+    // Event listeners for clicking Send or pressing Enter
+    sendBtn.addEventListener('click', handleSendMessage);
+    chatInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            handleSendMessage();
+        }
+    });
+</script>
 </body>
 </html>

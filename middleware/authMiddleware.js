@@ -1,19 +1,30 @@
 const jwt = require('jsonwebtoken');
-const { Student } = require('../models/Roles'); // updated import
+const { Student } = require('../models/Roles');
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies?.jwt;
+    // 🔐 1. Check AI agent access first
+    
 
-    // ❌ No token → redirect to login
-    if (!token) {
-      return res.redirect('/signin');
+    if (req.body?.['x-ai-pass'] && req.body['x-ai-pass'] === process.env.AI_PASS){
+      console.log("[AUTH] AI agent authenticated");
+
+      // Optional: attach a fake/system user
+      s_id=await Student.findById(req.body.stduentId)
+      
+      req.user = await Student.findById(s_id)
+      console.log(req.user)
+      console.log(req.body.message)
+
+      return next();
     }
 
-    // 🔐 Verify token
+    // 🔐 2. Normal JWT auth (users)
+    const token = req.cookies?.jwt;
+
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 🔍 Get user by ID
     const student = await Student.findById(decoded.id);
 
     if (!student) {
@@ -21,13 +32,11 @@ const authMiddleware = async (req, res, next) => {
       return res.redirect('/signin');
     }
 
-    // 🚫 Blocked user
     if (student.isBlocked) {
       res.clearCookie('jwt');
       return res.redirect('/signin');
     }
 
-    // ✅ OK, attach user to request
     req.user = student;
     next();
 
