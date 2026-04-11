@@ -2,12 +2,20 @@ from langchain_core.tools import tool
 from bson import ObjectId
 from db import db
 import os
+import requests
+import json
+import requests
+import os
+from pydantic import BaseModel, Field
 
 
+class StudentInfoInput(BaseModel):
+    student_id: str = Field(
+        description="CRITICAL: The exact student_id from the SYSTEM VARIABLES. You MUST extract and provide this to fetch the user's personal profile."
+    )
 
 
-
-@tool
+@tool("get_stduent_info", args_schema=StudentInfoInput)
 async def get_stduent_info(student_id: str) -> dict:
     """
     Fetches basic information about the student with that stdudent id .
@@ -46,8 +54,13 @@ async def get_stduent_info(student_id: str) -> dict:
         "isBlocked": student.get("isBlocked", False)
     }
 
+class AbsencesInput(BaseModel):
+    student_id: str = Field(
+        description="CRITICAL: The exact student_id from the SYSTEM VARIABLES. You MUST extract and provide this to retrieve the student's absence records."
+    )
 
-@tool
+
+@tool("get_absences", args_schema=AbsencesInput)
 async def get_absences(student_id: str) -> list[dict]:
     """
     Fetches all recorded absences for a specific student.
@@ -107,8 +120,12 @@ async def get_absences(student_id: str) -> list[dict]:
     print(f"[DEBUG] Enriched results: {enriched_results}")
     return enriched_results
 
-
-@tool
+class ExcessiveAbsencesInput(BaseModel):
+    student_id: str = Field(
+        description="CRITICAL: The exact student_id from the SYSTEM VARIABLES. You MUST extract and provide this to check if the student is at risk of elimination."
+    )
+    
+@tool("check_excessive_absences", args_schema=ExcessiveAbsencesInput)
 async def check_excessive_absences(student_id: str) -> str:
     """
     Checks if a student has exceeded the maximum allowed UNJUSTIFIED absences in any subject.
@@ -180,55 +197,67 @@ async def get_all_subjects() -> str:
 
 
 
-import httpx
+class AttestationInput(BaseModel):
+    student_id: str = Field(
+        description="CRITICAL: The exact student_id from the SYSTEM VARIABLES. You MUST extract and provide this."
+    )
+    academic_year: str = Field(
+        description="The academic year requested by the user, formatted as YYYY-YYYY (e.g., '2024-2025')."
+    )
+    semester: str = Field(
+        description="The semester requested by the user, strictly formatted as 'S1' or 'S2'."
+    )
 
-
-
-
-@tool
-async def delegate_attestation_to_agent(message: str,studentID:str) -> str:
+# 2. Attach the schema to the tool
+@tool("generate_attendance_certificate", args_schema=AttestationInput)
+def generate_attendance_certificate(student_id: str, academic_year: str, semester: str):
     """
-    Sends a message to the external AI chat agent.
-    Only forwards the message and authenticates using AI_PASS.
-    Always informs the user that the demand for the attestation has been sent and expect to be emailed shortly.
+    Backend tool to generate an attendance certificate.
+    Call this tool when a user asks 'generate an attendace certificate' or somthing like that , 
     """
-    print(f"[DEBUG] Sending message to attestation agent: {message} and student id {studentID}")
-
-    url = "http://localhost:5000/api/chat/message"
-    ai_pass = "AHLABIK"
-
-    payload = {
-        "message": message,
-        "stduentId": studentID, # Note: Verify your node server actually spells this "stduentId" and not "studentId"
-        "x-ai-pass": ai_pass
-    }
-
-    # FIX 1: Add the headers variable back!
+    print("[DEBUG] Generating attendace certificate for student_id: {student_id} year : {academic_year} and semstre {semester}"  )
+    url = "http://localhost:5000/api/tools/process-attestation"
+    ai_pass = os.getenv("ai_pass") 
+    
     headers = {
-        "x-ai-pass": ai_pass
+        "x-ai-pass": ai_pass,
+        "Content-Type": "application/json",
+        
     }
-
+    
+    payload = {
+        
+        "studentId": student_id,
+        "academicYear": academic_year,
+        "semester": semester
+    }
+    
     try:
-        # FIX 2: Add the timeout back so the email has time to send!
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                url,
-                json=payload,
-                headers=headers
-            )
+        response = requests.post(url, headers=headers, json=payload)
+        
+        if not response.ok:
+            try:
+                return response.json() 
+            except ValueError:
+                response.raise_for_status()
+        print(response.json())
 
-            print("STATUS:", response.status_code)
-            print("BODY:", response.text)
+        return response.json()
 
-            response.raise_for_status()
-            return response.text
+    except requests.exceptions.RequestException as e:
+        return {
+            "status": "error", 
+            "reason": f"Network or API error: {str(e)}", 
+            "success": False, 
+            "email_sent": False
+        }
+# Example usage by the AI Agent:
+# print(generate_attendance_certificate("jwt_token_here", "12345", "2023-2024", "S1", "2023-09-01", "2024-01-31"))
 
-    except Exception as e:
-        return f"❌ Error while sending request: {str(e)}"
 
 # tools_list definition remains the same
 
 # Note: get_subject_by_id is no longer strictly needed as a standalone tool 
 # because get_absences handles the translation automatically now, but you can 
 # leave it in the list if you want the user to be able to ask "What is subject FDD?"
-tools_list = [get_stduent_info,get_absences, check_excessive_absences, get_all_subjects,delegate_attestation_to_agent]
+tools_list = [get_stduent_info,get_absences, check_excessive_absences, get_all_subjects,generate_attendance_certificate]

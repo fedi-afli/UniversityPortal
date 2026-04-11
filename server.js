@@ -17,6 +17,7 @@ const verifyRoutes = require('./routes/verify');
 const absenceRoutes = require('./routes/absenceRoutes');    
 const chatRoutes = require('./routes/chatRoutes');
 const assitantRoutes=require("./routes/aihelperRoute")
+const toolsRoutes=require("./routes/tools");
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/absence', absenceRoutes);
 app.use('/api/attestations', attestationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/assistantAgent',assitantRoutes)
+app.use("/api/tools",toolsRoutes)
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI)
