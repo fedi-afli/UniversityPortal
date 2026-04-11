@@ -7,13 +7,23 @@
     <title>CampusHub | Student Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
+<style>
+        /* ADD THIS: Default hidden state for the chat window */
+        .chat-window {
+            transform: translateY(20px) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom right;
+        }
 
+        /* Your existing active state */
         .chat-window.active {
             transform: translateY(0) scale(1);
             opacity: 1;
             pointer-events: auto;
         }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
@@ -43,7 +53,7 @@
                     </a>
                     <div class="hidden md:flex space-x-2">
                         <a href="/" class="text-white bg-gray-900 px-3 py-2 rounded-md text-sm font-medium border border-gray-700 transition">Home</a>
-                        <a href="#faculty" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Faculty</a>
+                      
                         <a href="/about" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">
                             About CampusHub
                         </a>
@@ -208,7 +218,7 @@
 
     <!-- Floating Chat Button & Window -->
     <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-   <div id="ai-chat-window" class="chat-window bg-gray-800 w-[90vw] sm:w-[450px] rounded-2xl shadow-2xl border border-gray-600 mb-4 overflow-hidden flex flex-col h-[650px]">
+   <div id="ai-chat-window" class="chat-window bg-gray-800 w-[90vw] sm:w-[450px] rounded-2xl shadow-2xl border border-gray-600 mb-2 overflow-hidden flex flex-col h-[650px]">
             <!-- Your original chat window content remains exactly the same -->
             <div class="bg-blue-600 p-4 flex justify-between items-center shadow-md z-10">
                 <div class="flex items-center gap-3">
@@ -279,9 +289,31 @@
     const closeBtn = document.getElementById('close-chat');
     const notificationPing = toggleBtn.querySelector('.absolute.top-0');
 
+// Replace your existing toggleChat function with this one:
     function toggleChat() {
         chatWindow.classList.toggle('active');
         if (notificationPing) notificationPing.style.display = 'none';
+
+        const icon = toggleBtn.querySelector('i');
+
+        // Check if the chat window is currently open
+        if (chatWindow.classList.contains('active')) {
+            // Make button smaller, change color to gray, and remove the big hover scale
+            toggleBtn.classList.remove('h-16', 'w-16', 'text-3xl', 'bg-blue-600', 'hover:bg-blue-700', 'hover:scale-110');
+            toggleBtn.classList.add('h-10', 'w-10', 'text-lg', 'bg-gray-700', 'hover:bg-gray-600');
+            
+            // Change the chat icon to a 'down chevron' to indicate minimizing
+            icon.classList.remove('fa-comment-dots');
+            icon.classList.add('fa-chevron-down');
+        } else {
+            // Restore original big blue button
+            toggleBtn.classList.remove('h-10', 'w-10', 'text-lg', 'bg-gray-700', 'hover:bg-gray-600');
+            toggleBtn.classList.add('h-16', 'w-16', 'text-3xl', 'bg-blue-600', 'hover:bg-blue-700', 'hover:scale-110');
+            
+            // Restore the chat bubble icon
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-comment-dots');
+        }
     }
 
     toggleBtn.addEventListener('click', toggleChat);
