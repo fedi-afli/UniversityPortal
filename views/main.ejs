@@ -8,12 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .chat-window {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(20px) scale(0.95);
-            opacity: 0;
-            pointer-events: none;
-        }
+
         .chat-window.active {
             transform: translateY(0) scale(1);
             opacity: 1;
@@ -213,7 +208,7 @@
 
     <!-- Floating Chat Button & Window -->
     <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-        <div id="ai-chat-window" class="chat-window bg-gray-800 w-80 sm:w-96 rounded-2xl shadow-2xl border border-gray-600 mb-4 overflow-hidden flex flex-col h-[450px]">
+   <div id="ai-chat-window" class="chat-window bg-gray-800 w-[90vw] sm:w-[450px] rounded-2xl shadow-2xl border border-gray-600 mb-4 overflow-hidden flex flex-col h-[650px]">
             <!-- Your original chat window content remains exactly the same -->
             <div class="bg-blue-600 p-4 flex justify-between items-center shadow-md z-10">
                 <div class="flex items-center gap-3">
