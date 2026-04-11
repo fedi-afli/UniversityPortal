@@ -1,114 +1,176 @@
-const AttestationRequest = require('../models/AttestationRequest');
 const Absence = require('../models/Absence');
-const { askOllama } = require('./ollamaService');
+const Enrollment = require('../models/Enrollment');
+const AttestationRequest = require('../models/AttestationRequest');
+const User = require('../models/User');
+
 const { generateAttestationPDF } = require('./pdfService');
-const { sendAttestationReadyEmail } = require('./emailService');
+const { sendAttestationReadyEmail, sendAttestationRejectedEmail } = require('./emailService');
 
-/**
- * Traite une demande d'attestation et met à jour son statut.
- * @param {string} requestId - ID de la demande
- */
-async function processAttestationRequest(requestId) {
-  try {
-    // Récupérer la demande avec étudiant et inscription
-    const request = await AttestationRequest.findById(requestId)
-      .populate('student')
-      .populate('enrollment');
+// Dictionary of standard academic dates
+const SEMESTER_DATES = {
+    "2023-2024": {
+        "S1": { start: "2023-09-01", end: "2024-01-31" },
+        "S2": { start: "2024-02-01", end: "2024-06-30" }
+    },
+    "2024-2025": {
+        "S1": { start: "2024-09-01", end: "2025-01-31" },
+        "S2": { start: "2025-02-01", end: "2025-06-30" }
+    }
+};
 
-    if (!request) return;
-
-    // Récupérer les absences sur la période
-    const absences = await Absence.find({
-      student: request.student._id,
-      date: { $gte: request.periode_debut, $lte: request.periode_fin }
-    });
-
-    // Calcul du taux de présence
-    const totalSessions = absences.length > 0 ? absences.length : 20; // ajustable si tu as le total réel
-    const unjustifiedAbsences = absences.filter(a => !a.isJustified).length;
-    const effectivePresents = totalSessions - unjustifiedAbsences;
-    const taux = totalSessions > 0 ? (effectivePresents / totalSessions) * 100 : 0;
-
-    // Construire le prompt pour l'agent Gemma
-    const prompt = `
-Tu es un agent administratif universitaire précis et strict.
-Tu dois analyser les données suivantes et décider si l'attestation de présence peut être délivrée.
-
-Données étudiant :
-- Nom : ${request.student.lastName} ${request.student.firstName}
-- CIN/N° inscription : ${request.student.nationalId || request.student.studentId || 'N/A'}
-- Formation : ${request.enrollment.programCode || 'N/A'}
-- Année : ${request.enrollment.academicYear}
-- Semestre : ${request.enrollment.semester}
-
-Période demandée : ${request.periode_debut.toISOString().split('T')[0]} → ${request.periode_fin.toISOString().split('T')[0]}
-
-Statistiques d'assiduité :
-- Nombre total de séances prévues : ${totalSessions}
-- Nombre total d'absences : ${absences.length}
-- Absences non justifiées : ${unjustifiedAbsences}
-- Séances considérées comme suivies : ${effectivePresents}
-- Taux de présence effectif : ${taux.toFixed(2)} %
-
-Règles officielles :
-1. Taux ≥ 75% → approved
-2. Taux < 75% → rejected
-3. Si données insuffisantes (total < 5 séances) → pending_manual
-
-Réponds UNIQUEMENT avec un JSON valide, sans texte ni balises :
-
-{
-  "decision": "approved" | "rejected" | "pending_manual" | "error",
-  "reason": "phrase courte et claire en français (max 80 caractères)",
-  "tauxPresence": ${taux.toFixed(2)},
-  "confidence": number entre 0 et 1
-}
-`;
-
-    // Appel à l'agent IA
-    const agentResponse = await askOllama(prompt);
-
-    // Parser la réponse JSON de manière robuste
-    let result;
-    try {
-      const cleaned = agentResponse
-        .trim()
-        .replace(/^```json\s*/i, '')
-        .replace(/\s*```$/i, '')
-        .replace(/[\n\r]+/g, ' ');
-
-      result = JSON.parse(cleaned);
-    } catch {
-      result = { decision: 'error', reason: 'Réponse non-JSON valide' };
+function getStandardSemesterDates(academicYear, semester) {
+    // 1. Check if we have exact hardcoded dates first
+    if (SEMESTER_DATES[academicYear] && SEMESTER_DATES[academicYear][semester]) {
+        return SEMESTER_DATES[academicYear][semester];
     }
 
-    // Mettre à jour la demande
-    request.statut = result.decision;
-    request.motif_rejet = result.reason || 'Décision automatique';
-    request.agent_trace = {
-      tauxPresence: result.tauxPresence ?? parseFloat(taux.toFixed(2)),
-      raw: agentResponse,
-      confidence: result.confidence ?? 0.8
-    };
+    // 2. Dynamic Fallback: If not found, calculate standard dates dynamically
+    try {
+        const startYear = parseInt(academicYear.split('-')[0]); 
+        const endYear = startYear + 1; 
 
-    // Générer PDF uniquement si approuvé
-    if (result.decision === 'approved') {
-      try {
-        const pdfPath = await generateAttestationPDF(request, request.student, request.enrollment);
+        if (semester === "S1") {
+            return {
+                start: `${startYear}-09-01`, 
+                end: `${endYear}-01-31`      
+            };
+        } else if (semester === "S2") {
+            return {
+                start: `${endYear}-02-01`,   
+                end: `${endYear}-06-30`      
+            };
+        }
+    } catch (e) {
+        return null; 
+    }
+
+    return null;
+}
+
+function parseTime(t) {
+    if (!t || !t.includes(':')) return null;
+    const [h, m] = t.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return null;
+    return h * 60 + m;
+}
+
+// Unified core function for both Web UI and AI Tool
+async function processAttestation({ studentId, academicYear, semester, periodStart, periodEnd }) {
+    try {
+        // 1. Smart Date Resolution
+        let finalStartDate = periodStart;
+        let finalEndDate = periodEnd;
+
+        // If dates aren't provided, look them up
+        if (!finalStartDate || !finalEndDate) {
+            const defaultDates = getStandardSemesterDates(academicYear, semester);
+            if (!defaultDates) {
+                return { 
+                    status: 'error', 
+                    reason: `Cannot automatically determine dates for ${academicYear} ${semester}.`, 
+                    success: false,
+                    email_sent: false
+                };
+            }
+            finalStartDate = defaultDates.start;
+            finalEndDate = defaultDates.end;
+        }
+
+        const startDate = new Date(finalStartDate);
+        const endDate = new Date(finalEndDate);
+        
+        if (isNaN(startDate) || isNaN(endDate) || endDate <= startDate) {
+            return { status: 'error', reason: 'Invalid period dates', success: false, email_sent: false };
+        }
+
+        // 2. Fetch Student & Enrollment
+        const student = await User.findById(studentId);
+        if (!student) return { status: 'error', reason: 'Student not found', success: false, email_sent: false };
+
+        const enrollment = await Enrollment.findOne({
+            student: student._id,
+            academicYear,
+            semester,
+            status: 'active'
+        });
+
+        if (!enrollment) {
+            await sendAttestationRejectedEmail(student, "Your enrollment is not active for this period.");
+            return { status: 'rejected', reason: 'No active enrollment', success: false, email_sent: true };
+        }
+
+        // 3. Calculate Limits
+        const diffDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+        const weeks = diffDays / 7;
+
+        if (weeks <= 0) return { status: 'rejected', reason: 'Period too short', success: false, email_sent: false };
+
+        const totalScheduledHours = weeks * 50; 
+        const maxAllowed = totalScheduledHours * 0.2;
+
+        // 4. Calculate Absences
+        const absences = await Absence.find({
+            student: student._id,
+            isJustified: false,
+            date: { $gte: startDate, $lte: endDate }
+        });
+
+        let totalUnjustifiedHours = 0;
+        absences.forEach(abs => {
+            const start = parseTime(abs.startTime);
+            const end = parseTime(abs.endTime);
+            if (start !== null && end !== null && end > start) {
+                totalUnjustifiedHours += (end - start) / 60;
+            }
+        });
+
+        // 5. Decision Logic
+        if (totalUnjustifiedHours >= maxAllowed) {
+            const reason = `Absence limit exceeded: ${totalUnjustifiedHours.toFixed(1)}h (Max: ${maxAllowed.toFixed(1)}h)`;
+            await sendAttestationRejectedEmail(student, reason);
+            return { 
+                status: 'rejected', 
+                reason: reason, 
+                success: false, 
+                email_sent: true,
+                unjustifiedHours: totalUnjustifiedHours, 
+                maxAllowed 
+            };
+        }
+
+        // 6. Save & Generate PDF (Success Case)
+        const request = new AttestationRequest({
+            student: student._id,
+            enrollment: enrollment._id,
+            annee_universitaire: academicYear,
+            semestre: semester,
+            periode_debut: startDate,
+            periode_fin: endDate,
+            statut: 'approved'
+        });
+
+        await request.save();
+
+        const pdfPath = await generateAttestationPDF(request, student, enrollment);
         request.file_path = pdfPath;
         request.date_generation = new Date();
-        await sendAttestationReadyEmail(request.student);
-      } catch (pdfErr) {
-        request.statut = 'error';
-        request.motif_rejet = 'Erreur lors de la génération du document PDF';
-      }
+        await request.save();
+
+        await sendAttestationReadyEmail(student, pdfPath);
+
+        // Final Return Object formatting as requested
+        return {
+            status: 'approved',
+            reason: 'Valid attendance',
+            success: true,
+            requestId: request._id,
+            email_sent: true
+        };
+
+    } catch (err) {
+        console.error('Service error:', err);
+        return { status: 'error', reason: 'Internal server error', success: false, email_sent: false };
     }
-
-    await request.save();
-
-  } catch (err) {
-    console.error(`Erreur globale traitement attestation ${requestId} :`, err.message);
-  }
 }
 
-module.exports = { processAttestationRequest };
+module.exports = { processAttestation };
