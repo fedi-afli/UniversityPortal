@@ -66,6 +66,7 @@ async def get_absences(student_id: str) -> list[dict]:
     Fetches all recorded absences for a specific student.
     Returns a list of subjects with the student's total absences, unjustified absences, 
     and the specific maximum allowed absences for that course.
+    u can calculate the rest of allowed absences per subject by the formula (maximum allowed absences )-unjustified absences
     """
     absences_collection = db["absences"]
     subjects_collection = db["subjects"]

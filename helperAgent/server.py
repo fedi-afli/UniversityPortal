@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from agent import ask_agent
+from agent_nvidia import ask_agent
 
 app = FastAPI()
 
