@@ -8,12 +8,7 @@ const absenceSchema = new mongoose.Schema({
     required: true 
   },
   
-  // From what class?
-  subject: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Subject', 
-    required: true 
-  },
+  
   
   // When?
   date: { type: Date, required: true },
@@ -23,4 +18,4 @@ const absenceSchema = new mongoose.Schema({
   
 }, { timestamps: true });
 
-module.exports = mongoose.model('Absence', absenceSchema);
+module.exports = mongoose.model('Elimination', absenceSchema);

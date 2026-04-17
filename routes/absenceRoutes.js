@@ -10,6 +10,7 @@ const absenceController = require('../controllers/absenceConroller'); // Fixed t
 const { ask_agent } = require('../services/aiJustifyAgent');
 const Absence = require('../models/Absence');
 const { sendJustificationConfirmation } = require('../routes/email');
+const Elimination = require('../models/Eliminations');
 
 
 const uploadDir = path.join(__dirname, '../public/uploads/justification/');
@@ -20,9 +21,20 @@ if (!fs.existsSync(uploadDir)) {
 
 
 router.get('/', authMiddleware, async (req, res) => {
+     try {
+        
+
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
   try {
     const user=req.user;
     const studentId = user._id;
+    const global_eliminations = await Elimination.find({
+            student: new mongoose.Types.ObjectId(studentId)
+        });
+    console.log(global_eliminations)
 
     // CALL the controller function
     const { totalHours, justifiedHours, unjustifiedHours } =
@@ -31,7 +43,7 @@ router.get('/', authMiddleware, async (req, res) => {
     const elimination_analysis=await absenceController.getStudentAbsencesBySubject(studentId);
 
     // Render EJS template
-    res.render('absence', { user,totalHours, justifiedHours, unjustifiedHours ,absences,elimination_analysis,aiResponse: null,statusMessage: null});
+    res.render('absence', { user,totalHours, justifiedHours, unjustifiedHours ,absences,global_eliminations,elimination_analysis,aiResponse: null,statusMessage: null});
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -135,10 +147,17 @@ router.post('/justify', authMiddleware, upload.single('certificate'), async (req
     }
 });
 
-/* module.exports = router;
-router.get(
-  "/absences",
-  authMiddleware,
-  absenceController.getStudentAbsenceHours
-); */
+router.get("/elimination", authMiddleware, async (req, res) => {
+    try {
+        const studentId = req.user._id;
+
+        const eliminations = await Elimination.find({
+            student: new mongoose.Types.ObjectId(studentId)
+        });
+
+        res.status(200).json(eliminations);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 module.exports = router;

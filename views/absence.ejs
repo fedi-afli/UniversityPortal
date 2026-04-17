@@ -42,7 +42,7 @@
                     </a>
                     <div class="hidden md:flex space-x-2">
                         <a href="/" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Home</a>
-                        
+                        <a href="/" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">Faculty</a>
                         <a href="/about" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">
                             About CampusHub
                         </a>
@@ -103,6 +103,31 @@
         </div>
     </nav>
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
+        <% if (global_eliminations.length > 0) { %>
+            <div class="bg-red-900/30 border-l-4 border-red-500 rounded-r-xl p-5 mb-8 shadow-lg shadow-red-900/20 relative overflow-hidden flex items-start gap-4">
+                <div class="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none"></div>
+
+                <div class="bg-red-950/50 p-2 rounded-full border border-red-800/50 flex-shrink-0 mt-0.5">
+                    <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl w-6 h-6 flex items-center justify-center"></i>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold text-red-400">Action Required: Academic Elimination</h3>
+                    <div class="mt-1.5 text-sm text-red-200/90 leading-relaxed space-y-1">
+                        <p>
+                            Our records indicate that you have reached the threshold for global elimination as of
+                            <strong class="text-white bg-red-900/50 px-1.5 py-0.5 rounded border border-red-800/50 mx-1">
+                                <%= new Date(global_eliminations[0].date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) %>
+                            </strong>.
+                        </p>
+                        <p class="font-medium text-red-300 mt-2 flex items-center gap-2">
+                            <i class="fa-solid fa-building-user"></i>
+                            Please contact the administration office immediately to review your status.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        <% } %>
         
 <header>
     <div class="flex items-center gap-2 text-sm text-gray-400 mb-2">
@@ -162,7 +187,7 @@
         </section>
         <!-- SUBJECT ABSENCE PROGRESS -->
 <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-  <% elimination_analysis.sort((a, b) => a.subject.name.localeCompare(b.subject.name)).forEach(item => { 
+  <% elimination_analysis.sort((a, b) => a.subject.name.localeCompare(b.subject.name)).forEach(item => {
        const absences = item.numberOfAbsences;
        const max = item.subject.maxAbsencesLimit;
 
