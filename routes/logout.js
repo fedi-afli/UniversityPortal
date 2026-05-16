@@ -5,7 +5,7 @@ router.all('/', (req, res) => {
 
     res.clearCookie('jwt', {
         httpOnly: true,
-        secure: true, 
+      //  secure: true, 
         sameSite: 'strict'
     });
 

@@ -18,6 +18,7 @@ const absenceRoutes = require('./routes/absenceRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const assitantRoutes=require("./routes/aihelperRoute")
 const toolsRoutes=require("./routes/tools");
+const internshipRoutes=require("./routes/internships");
 
 const app = express();
 
@@ -31,9 +32,10 @@ app.set('views', path.join(__dirname, 'views'));
 app.use('/uploads', express.static('uploads'));
 app.use(express.static('public'));
 // Route principale : Portail ou Login
+// Change your root route to this:
 app.get('/', authMiddleware, (req, res) => {
-     console.log(req.user);
-     res.render('main', { user: req.user });
+
+    return res.render('main', { user: req.user || null });
 });
 // Routes API et pages
 app.use('/', pagesRoutes);
@@ -48,6 +50,7 @@ app.use('/api/attestations', attestationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/assistantAgent',assitantRoutes)
 app.use("/api/tools",toolsRoutes)
+app.use("/api/internships",internshipRoutes)
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI)

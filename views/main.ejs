@@ -7,8 +7,7 @@
     <title>CampusHub | Student Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-        /* ADD THIS: Default hidden state for the chat window */
+    <style>
         .chat-window {
             transform: translateY(20px) scale(0.95);
             opacity: 0;
@@ -17,7 +16,6 @@
             transform-origin: bottom right;
         }
 
-        /* Your existing active state */
         .chat-window.active {
             transform: translateY(0) scale(1);
             opacity: 1;
@@ -28,7 +26,7 @@
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
-        
+
         .faculty-card {
             transition: all 0.3s ease;
         }
@@ -36,62 +34,118 @@
             transform: translateY(-4px);
             box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
         }
+        <style>
+         .chat-window {
+             transform: translateY(20px) scale(0.95);
+             opacity: 0;
+             pointer-events: none;
+             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+             transform-origin: bottom right;
+         }
+
+        .chat-window.active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+
+        .faculty-card {
+            transition: all 0.3s ease;
+        }
+        .faculty-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        /* ==========================================================
+           SCOPED MARKDOWN STYLING FOR CHAT (Overrides Tailwind Reset)
+           ========================================================== */
+
+        /* Table Layout Container & Structuring */
+
+        #chat-messages ul, #chat-messages ol {
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        #chat-messages ul {
+            list-style-type: disc;
+        }
+
+        #chat-messages ol {
+            list-style-type: decimal;
+        }
+
+        #chat-messages li {
+            margin-bottom: 0.25rem;
+        }
+
+        #chat-messages p {
+            margin-bottom: 0.5rem;
+        }
+
+        #chat-messages p:last-child {
+            margin-bottom: 0;
+        }
+
+        #chat-messages strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="bg-gray-900 min-h-screen font-sans flex flex-col relative text-gray-200">
 
-    <!-- Navbar -->
-    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-[100]">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center space-x-8">
-                    <a href="/" class="flex-shrink-0 flex items-center gap-3 text-xl font-bold text-white">
-                        <div class="bg-blue-600 p-2 rounded-lg">
-                            <i class="fa-solid fa-graduation-cap text-white"></i>
-                        </div>
-                        CampusHub
-                    </a>
-                    <div class="hidden md:flex space-x-2">
-                        <a href="/" class="text-white bg-gray-900 px-3 py-2 rounded-md text-sm font-medium border border-gray-700 transition">Home</a>
-                      
-                        <a href="/about" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">
-                            About CampusHub
-                        </a>
+<nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-[100]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center space-x-8">
+                <a href="/" class="flex-shrink-0 flex items-center gap-3 text-xl font-bold text-white">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <i class="fa-solid fa-graduation-cap text-white"></i>
                     </div>
+                    CampusHub
+                </a>
+                <div class="hidden md:flex space-x-2">
+                    <a href="/" class="text-white bg-gray-900 px-3 py-2 rounded-md text-sm font-medium border border-gray-700 transition">Home</a>
+                    <a href="/about" class="text-gray-300 hover:text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition">
+                        About CampusHub
+                    </a>
                 </div>
-                
-                <!-- User Section with Dropdown -->
-                <div class="flex items-center gap-4 relative">
+            </div>
+
+            <div class="flex items-center gap-4 relative">
+                <% if (user) { %>
                     <div class="hidden sm:flex flex-col items-end">
-                        <span class="text-sm font-medium text-white">
-                            <%= user ? user.lastName + ' ' + user.firstName : 'Student' %>
-                        </span>
+                            <span class="text-sm font-medium text-white">
+                                <%= user.lastName %> <%= user.firstName %>
+                            </span>
                         <span class="text-xs text-blue-400">
-                            ID: <%= user && user.nationalId ? user.nationalId : 'N/A' %>
-                        </span>
+                                ID: <%= user.nationalId ? user.nationalId : 'N/A' %>
+                            </span>
                     </div>
 
-                    <!-- Profile Picture with Dropdown -->
                     <div class="relative">
-                        <button id="user-menu-button" 
-                                class="flex items-center gap-2 focus:outline-none group">
+                        <button id="user-menu-button" class="flex items-center gap-2 focus:outline-none group">
                             <img class="h-10 w-10 rounded-full object-cover border-2 border-gray-600 group-hover:border-blue-500 transition"
-                                 src="<%= user && user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatar.png' %>"
+                                 src="<%= user.profilePicture ? user.profilePicture : '/uploads/default-avatars/default-avatar.png' %>"
                                  alt="Profile">
                             <i class="fa-solid fa-chevron-down text-gray-400 text-sm group-hover:text-white transition hidden md:block"></i>
                         </button>
 
-                        <!-- Dropdown Menu -->
-                        <div id="user-dropdown" 
-                             class="hidden absolute right-0 top-14 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
-                            
+                        <div id="user-dropdown" class="hidden absolute right-0 top-14 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
                             <div class="px-4 py-3 bg-gray-900/50 border-b border-gray-700">
                                 <p class="text-sm text-gray-400">Signed in as</p>
                                 <p class="text-sm font-medium text-white truncate">
-                                    <%= user ? user.email : 'student@campushub.com' %>
+                                    <%= user.email %>
                                 </p>
                             </div>
-
                             <div class="py-2">
                                 <a href="/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">
                                     <i class="fa-solid fa-user w-5 text-center"></i>
@@ -104,20 +158,28 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                <% } else { %>
+                    <a href="/signin" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-md">
+                        <i class="fa-solid fa-right-to-bracket mr-2"></i>Log In
+                    </a>
+                <% } %>
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
 
+<main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
-        
-        <header id="dashboard">
-            <h1 class="text-3xl font-bold text-white">Welcome, <%= user ? user.firstName : 'Student' %> 👋</h1>
-            <p class="text-gray-400 mt-2">Manage your absences and administrative documents from your personal space.</p>
-        </header>
+    <header id="dashboard">
+        <h1 class="text-3xl font-bold text-white">
+            Welcome to CampusHub 👋
+        </h1>
+        <p class="text-gray-400 mt-2">
+            <%= user ? "Manage your absences and administrative documents from your personal space." : "View institutional information. Log in to access your personal student tools." %>
+        </p>
+    </header>
 
-        <!-- Quick Access Cards -->
+    <% if (user) { %>
         <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <a href="/api/absence" class="bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-gray-700 hover:border-blue-500 flex items-start gap-5 cursor-pointer group">
                 <div class="bg-gray-900 border border-gray-700 p-4 rounded-lg text-red-400 group-hover:bg-red-500 group-hover:text-white transition-colors">
@@ -138,134 +200,154 @@
                     <p class="text-sm text-gray-400 mt-2">Generate and download your official certificate of attendance in PDF format.</p>
                 </div>
             </a>
-        </section>
-
-        <!-- Enhanced Faculty Section -->
-        <section id="faculty" class="bg-gray-800 rounded-2xl shadow-xl border border-gray-700 p-8">
-            <div class="flex items-center gap-4 mb-8">
-                <div class="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center">
-                    <i class="fa-solid fa-building-columns text-blue-400 text-3xl"></i>
+            <a href="/api/internships/submission" class="bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-gray-700 hover:border-blue-500 flex items-start gap-5 cursor-pointer group">
+                <div class="bg-gray-900 border border-gray-700 p-4 rounded-lg text-yellow-400 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-briefcase text-2xl"></i>
                 </div>
+
                 <div>
-                    <h2 class="text-3xl font-bold text-white">Faculty of Science and Technology</h2>
-                    <p class="text-blue-400 text-lg">Jarzouna, Bizerte, Tunisia</p>
+                    <h2 class="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors">
+                        Internship Submission
+                    </h2>
+
+                    <p class="text-sm text-gray-400 mt-2">
+                        Submit the scanned internship completion document and track your internship validation status.
+                    </p>
                 </div>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-8">
-                <!-- Left: Information -->
-                <div class="space-y-6">
-                    <div class="bg-gray-900/70 rounded-xl p-6 border border-gray-700">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="fa-solid fa-clock text-blue-400"></i>
-                            Working Hours
-                        </h3>
-                        <p class="text-gray-300">Monday - Friday: <strong class="text-white">8:00 AM - 6:00 PM</strong></p>
-                    </div>
-
-                    <div class="bg-gray-900/70 rounded-xl p-6 border border-gray-700">
-                        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <i class="fa-solid fa-location-dot text-blue-400"></i>
-                            Location & Contact
-                        </h3>
-                        <div class="space-y-3 text-gray-300">
-                            <p><strong>Address:</strong> Jarzouna, Bizerte, Tunisia, 7021</p>
-                            <p><strong>Phone:</strong> <span class="text-blue-400">111-111-111</span></p>
-                            <p><strong>Email:</strong> <span class="text-blue-400">Campus@faculty.tn</span></p>
-                            <p><strong>Website:</strong> <a href="https://rnu.tn" target="_blank" class="text-blue-400 hover:underline">rnu.tn</a></p>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-900/70 rounded-xl p-6 border border-gray-700">
-                        <h3 class="text-lg font-semibold text-white mb-4">Our Strengths</h3>
-                        <ul class="space-y-3">
-                            <li class="flex items-start gap-3">
-                                <i class="fa-solid fa-check text-green-400 mt-1"></i>
-                                <span class="text-gray-300">State-of-the-art laboratories and research facilities</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fa-solid fa-check text-green-400 mt-1"></i>
-                                <span class="text-gray-300">Extensive digital and physical library resources</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fa-solid fa-check text-green-400 mt-1"></i>
-                                <span class="text-gray-300">Active student clubs and scientific societies</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fa-solid fa-check text-green-400 mt-1"></i>
-                                <span class="text-gray-300">Strong focus on innovation and practical skills</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Right: Visual + Map-like info -->
-                <div class="space-y-6">
-                    <div class="rounded-2xl overflow-hidden border border-gray-700">
-                        <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                             alt="Faculty Campus" 
-                             class="w-full h-80 object-cover">
-                    </div>
-                    
-                    <div class="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl p-6 text-center border border-blue-800/30">
-                        <p class="text-blue-300 text-sm uppercase tracking-widest mb-1">Faculty of Science and Technology</p>
-                        <p class="text-2xl font-bold text-white">University of Carthage</p>
-                        <p class="text-gray-400 mt-2">Committed to excellence in science and technology education since 2000</p>
-                    </div>
-                </div>
-            </div>
+            </a>
         </section>
-    </main>
+    <% } %>
 
-    <!-- Floating Chat Button & Window -->
-    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-   <div id="ai-chat-window" class="chat-window bg-gray-800 w-[90vw] sm:w-[450px] rounded-2xl shadow-2xl border border-gray-600 mb-2 overflow-hidden flex flex-col h-[650px]">
-            <!-- Your original chat window content remains exactly the same -->
-            <div class="bg-blue-600 p-4 flex justify-between items-center shadow-md z-10">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <div class="bg-white text-blue-600 rounded-full h-10 w-10 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-robot"></i>
-                        </div>
-                        <div class="absolute bottom-0 right-0 h-3 w-3 bg-green-400 border-2 border-blue-600 rounded-full"></div>
-                    </div>
-                    <div>
-                        <span class="block font-bold text-white text-sm">AI Assistant</span>
-                        <span class="block text-blue-200 text-xs">Online</span>
-                    </div>
-                </div>
-                <button id="close-chat" class="text-white hover:text-gray-200 focus:outline-none transition-transform hover:rotate-90">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+    <section id="faculty" class="bg-gray-800 rounded-2xl shadow-xl border border-gray-700 p-8">
+        <div class="flex items-center gap-4 mb-8">
+            <div class="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center">
+                <i class="fa-solid fa-building-columns text-blue-400 text-3xl"></i>
             </div>
-            
-            <div class="flex-grow p-4 overflow-y-auto bg-gray-900 flex flex-col gap-4" id="chat-messages">
-                <div class="flex items-end gap-2">
-                    <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm">
-                        Hello <%= user ? user.firstName : 'there' %>! 👋 I'm your virtual assistant. How can I help you today? 
-                    </div>
-                </div>
-            </div>
-
-            <div class="p-3 bg-gray-800 border-t border-gray-700 flex items-center gap-2">
-                <input type="text" id="chat-input" placeholder="Type your message..." class="flex-grow bg-gray-900 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-full px-4 py-2.5 text-sm outline-none transition-all placeholder-gray-500">
-                <button id="send-message-btn" class="bg-blue-600 text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-blue-700 transition flex-shrink-0 shadow-md">
-                    <i class="fa-solid fa-paper-plane text-sm"></i>
-                </button>
+            <div>
+                <h2 class="text-3xl font-bold text-white">Faculty of Science and Technology</h2>
+                <p class="text-blue-400 text-lg">Jarzouna, Bizerte, Tunisia</p>
             </div>
         </div>
 
-        <button id="toggle-chat" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full h-16 w-16 shadow-[0_0_15px_rgba(37,99,235,0.5)] flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none relative">
-            <i class="fa-solid fa-comment-dots text-3xl"></i>
-            <span class="absolute top-0 right-0 flex h-4 w-4">
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="space-y-6">
+                <div class="bg-gray-900/70 rounded-xl p-6 border border-gray-700">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-clock text-blue-400"></i>
+                        Working Hours
+                    </h3>
+                    <p class="text-gray-300">Monday - Friday: <strong class="text-white">8:00 AM - 6:00 PM</strong></p>
+                </div>
+
+                <div class="bg-gray-900/70 rounded-xl p-6 border border-gray-700">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot text-blue-400"></i>
+                        Location & Contact
+                    </h3>
+                    <div class="space-y-3 text-gray-300">
+                        <p><strong>Address:</strong> Jarzouna, Bizerte, Tunisia, 7021</p>
+                        <p><strong>Phone:</strong> <span class="text-blue-400">111-111-111</span></p>
+                        <p><strong>Email:</strong> <span class="text-blue-400">Campus@faculty.tn</span></p>
+                        <p><strong>Website:</strong> <a href="https://rnu.tn" target="_blank" class="text-blue-400 hover:underline">rnu.tn</a></p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/70 rounded-xl p-6 border border-gray-700">
+                    <h3 class="text-lg font-semibold text-white mb-4">Our Strengths</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-check text-green-400 mt-1"></i>
+                            <span class="text-gray-300">State-of-the-art laboratories and research facilities</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-check text-green-400 mt-1"></i>
+                            <span class="text-gray-300">Extensive digital and physical library resources</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-check text-green-400 mt-1"></i>
+                            <span class="text-gray-300">Active student clubs and scientific societies</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-check text-green-400 mt-1"></i>
+                            <span class="text-gray-300">Strong focus on innovation and practical skills</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="rounded-2xl overflow-hidden border border-gray-700">
+                    <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                         alt="Faculty Campus"
+                         class="w-full h-80 object-cover">
+                </div>
+
+                <div class="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl p-6 text-center border border-blue-800/30">
+                    <p class="text-blue-300 text-sm uppercase tracking-widest mb-1">Faculty of Science and Technology</p>
+                    <p class="text-2xl font-bold text-white">University of Carthage</p>
+                    <p class="text-gray-400 mt-2">Committed to excellence in science and technology education since 2000</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+
+<div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div id="ai-chat-window" class="chat-window bg-gray-800 w-[90vw] sm:w-[450px] rounded-2xl shadow-2xl border border-gray-600 mb-2 overflow-hidden flex flex-col h-[650px]">
+        <div class="bg-blue-600 p-4 flex justify-between items-center shadow-md z-10">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="bg-white text-blue-600 rounded-full h-10 w-10 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="absolute bottom-0 right-0 h-3 w-3 bg-green-400 border-2 border-blue-600 rounded-full"></div>
+                </div>
+                <div>
+                    <span class="block font-bold text-white text-sm">AI Assistant</span>
+                    <span class="block text-blue-200 text-xs">Online</span>
+                </div>
+            </div>
+            <button id="close-chat" class="text-white hover:text-gray-200 focus:outline-none transition-transform hover:rotate-90">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <div class="flex-grow p-4 overflow-y-auto bg-gray-900 flex flex-col gap-4" id="chat-messages">
+            <div class="flex items-end gap-2">
+                <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm">
+                    <% if (user) { %>
+                        Hello <%= user.firstName %>! 👋 I'm your virtual assistant. How can I help you today?
+                    <% } else { %>
+                        Welcome to CampusHub! 👋 I'm our campus virtual assistant. Since you aren't signed in, I can only help you with general information about our faculty. How can I assist you?
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3 bg-gray-800 border-t border-gray-700 flex items-center gap-2">
+            <input type="text" id="chat-input" placeholder="Type your message..." class="flex-grow bg-gray-900 border border-gray-700 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-full px-4 py-2.5 text-sm outline-none transition-all placeholder-gray-500">
+            <button id="send-message-btn" class="bg-blue-600 text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-blue-700 transition flex-shrink-0 shadow-md">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <button id="toggle-chat" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full h-16 w-16 shadow-[0_0_15px_rgba(37,99,235,0.5)] flex items-center justify-center transition-all duration-300 hover:scale-110 focus:outline-none relative">
+        <i class="fa-solid fa-comment-dots text-3xl"></i>
+        <span class="absolute top-0 right-0 flex h-4 w-4">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-gray-900"></span>
             </span>
-        </button>
-    </div>
+    </button>
+</div>
+
+
 
 <script>
-    // Dropdown Logic (unchanged)
+    // ==========================================
+    // 1. DROPDOWN LOGIC (Untouched)
+    // ==========================================
     document.addEventListener('DOMContentLoaded', () => {
         const button = document.getElementById('user-menu-button');
         const dropdown = document.getElementById('user-dropdown');
@@ -284,128 +366,220 @@
         }
     });
 
-    // === YOUR ORIGINAL CHAT SCRIPT - UNCHANGED ===
+    // ==========================================
+    // 2. CHAT UI LOGIC
+    // ==========================================
     const chatWindow = document.getElementById('ai-chat-window');
     const toggleBtn = document.getElementById('toggle-chat');
     const closeBtn = document.getElementById('close-chat');
-    const notificationPing = toggleBtn.querySelector('.absolute.top-0');
 
-// Replace your existing toggleChat function with this one:
-    function toggleChat() {
-        chatWindow.classList.toggle('active');
-        if (notificationPing) notificationPing.style.display = 'none';
+    if (toggleBtn && chatWindow) {
+        const notificationPing = toggleBtn.querySelector('.absolute.top-0');
 
-        const icon = toggleBtn.querySelector('i');
+        function toggleChat() {
+            chatWindow.classList.toggle('active');
+            if (notificationPing) notificationPing.style.display = 'none';
 
-        // Check if the chat window is currently open
-        if (chatWindow.classList.contains('active')) {
-            // Make button smaller, change color to gray, and remove the big hover scale
-            toggleBtn.classList.remove('h-16', 'w-16', 'text-3xl', 'bg-blue-600', 'hover:bg-blue-700', 'hover:scale-110');
-            toggleBtn.classList.add('h-10', 'w-10', 'text-lg', 'bg-gray-700', 'hover:bg-gray-600');
-            
-            // Change the chat icon to a 'down chevron' to indicate minimizing
-            icon.classList.remove('fa-comment-dots');
-            icon.classList.add('fa-chevron-down');
-        } else {
-            // Restore original big blue button
-            toggleBtn.classList.remove('h-10', 'w-10', 'text-lg', 'bg-gray-700', 'hover:bg-gray-600');
-            toggleBtn.classList.add('h-16', 'w-16', 'text-3xl', 'bg-blue-600', 'hover:bg-blue-700', 'hover:scale-110');
-            
-            // Restore the chat bubble icon
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-comment-dots');
-        }
-    }
+            const icon = toggleBtn.querySelector('i');
 
-    toggleBtn.addEventListener('click', toggleChat);
-    closeBtn.addEventListener('click', toggleChat);
-
-    const chatInput = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('send-message-btn');
-    const chatMessagesContainer = document.getElementById('chat-messages');
-
-    const studentId = "<%= user && user._id ? user._id : '' %>"; 
-
-    function scrollToBottom() {
-        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
-    }
-
-    function appendUserMessage(text) {
-        const msgHTML = `
-        <div class="flex items-end gap-2 justify-end mt-4">
-            <div class="bg-gray-700 text-white rounded-2xl rounded-br-sm p-3 text-sm max-w-[85%] shadow-sm">
-                ${text}
-            </div>
-        </div>`;
-        chatMessagesContainer.insertAdjacentHTML('beforeend', msgHTML);
-        scrollToBottom();
-    }
-
-    function appendAIMessage(text) {
-        const formattedText = text.replace(/\n/g, '<br>');
-        const msgHTML = `
-        <div class="flex items-end gap-2 mt-4">
-            <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm">
-                ${formattedText}
-            </div>
-        </div>`;
-        chatMessagesContainer.insertAdjacentHTML('beforeend', msgHTML);
-        scrollToBottom();
-    }
-
-    function showLoader() {
-        const loaderHTML = `
-        <div id="ai-loader" class="flex items-end gap-2 mt-4">
-            <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm shadow-sm flex items-center gap-2 opacity-80">
-                <i class="fa-solid fa-spinner fa-spin text-xs"></i>
-                <span class="animate-pulse">Working on your request...</span>
-            </div>
-        </div>`;
-        chatMessagesContainer.insertAdjacentHTML('beforeend', loaderHTML);
-        scrollToBottom();
-    }
-
-    function removeLoader() {
-        const loader = document.getElementById('ai-loader');
-        if (loader) loader.remove();
-    }
-
-    async function handleSendMessage() {
-        const messageText = chatInput.value.trim();
-        if (!messageText) return;
-
-        appendUserMessage(messageText);
-        chatInput.value = '';
-        showLoader();
-
-        try {
-            const response = await fetch('/api/assistantAgent/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: messageText,
-                    student_id: studentId
-                })
-            });
-
-            const data = await response.json();
-            removeLoader();
-            
-            if (data.response) {
-                appendAIMessage(data.response);
+            if (chatWindow.classList.contains('active')) {
+                toggleBtn.classList.remove('h-16', 'w-16', 'text-3xl', 'bg-blue-600', 'hover:bg-blue-700', 'hover:scale-110');
+                toggleBtn.classList.add('h-10', 'w-10', 'text-lg', 'bg-gray-700', 'hover:bg-gray-600');
+                icon.classList.remove('fa-comment-dots');
+                icon.classList.add('fa-chevron-down');
             } else {
-                appendAIMessage("Received an unexpected format from the server.");
+                toggleBtn.classList.remove('h-10', 'w-10', 'text-lg', 'bg-gray-700', 'hover:bg-gray-600');
+                toggleBtn.classList.add('h-16', 'w-16', 'text-3xl', 'bg-blue-600', 'hover:bg-blue-700', 'hover:scale-110');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-comment-dots');
             }
-        } catch (error) {
-            removeLoader();
-            appendAIMessage("Sorry, I'm having trouble connecting to the server right now. Please try again later.");
+        }
+
+        toggleBtn.addEventListener('click', toggleChat);
+        if (closeBtn) closeBtn.addEventListener('click', toggleChat);
+
+        // ==========================================
+        // 3. CHAT STATE & STORAGE SETTINGS
+        // ==========================================
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-message-btn');
+        const chatMessagesContainer = document.getElementById('chat-messages');
+
+        const rawStudentId = "<%= user && user._id ? user._id : '' %>";
+        const studentId = rawStudentId === '' ? 'guest' : rawStudentId;
+        const STORAGE_KEY = `campushub_chat_history_${studentId}`;
+
+        // Load saved chat on startup
+        document.addEventListener('DOMContentLoaded', () => {
+            if (chatMessagesContainer) {
+                const savedChatHTML = localStorage.getItem(STORAGE_KEY);
+                if (savedChatHTML) {
+                    chatMessagesContainer.innerHTML = savedChatHTML;
+                    scrollToBottom();
+                }
+            }
+        });
+
+        // Save current chat state
+        function syncChatToStorage() {
+            if (chatMessagesContainer) {
+                localStorage.setItem(STORAGE_KEY, chatMessagesContainer.innerHTML);
+            }
+        }
+
+        function scrollToBottom() {
+            if (chatMessagesContainer) chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        }
+
+        // ==========================================
+        // 4. MESSAGE APPENDERS
+        // ==========================================
+        function appendUserMessage(text) {
+            const msgHTML = `
+            <div class="flex items-end gap-2 justify-end mt-4">
+                <div class="bg-gray-700 text-white rounded-2xl rounded-br-sm p-3 text-sm max-w-[85%] shadow-sm">
+                    ${text}
+                </div>
+            </div>`;
+            chatMessagesContainer.insertAdjacentHTML('beforeend', msgHTML);
+            scrollToBottom();
+            syncChatToStorage();
+        }
+
+        function appendAIMessage(text) {
+            const msgHTML = `
+            <div class="flex items-end gap-2 mt-4">
+                <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm">
+                    ${text}
+                </div>
+            </div>`;
+            chatMessagesContainer.insertAdjacentHTML('beforeend', msgHTML);
+            scrollToBottom();
+            syncChatToStorage();
+        }
+
+        function showLoader() {
+            const loaderHTML = `
+            <div id="ai-loader" class="flex items-end gap-2 mt-4">
+                <div class="bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm shadow-sm flex items-center gap-2 opacity-80">
+                    <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                    <span class="animate-pulse">Working on your request...</span>
+                </div>
+            </div>`;
+            chatMessagesContainer.insertAdjacentHTML('beforeend', loaderHTML);
+            scrollToBottom();
+        }
+
+        function removeLoader() {
+            const loader = document.getElementById('ai-loader');
+            if (loader) loader.remove();
+        }
+
+
+        // ==========================================
+        // 5. ASYNC STREAMING PIPELINE
+        // ==========================================
+// ==========================================
+// 5. SEND MESSAGE HANDLER
+// ==========================================
+        async function handleSendMessage() {
+            const messageText = chatInput.value.trim();
+            if (!messageText) return;
+
+            appendUserMessage(messageText);
+            chatInput.value = '';
+
+            // Show status bubble
+            const statusId = 'status-' + Date.now();
+            chatMessagesContainer.insertAdjacentHTML('beforeend', `
+        <div id="${statusId}" class="flex items-end gap-2 mt-4">
+            <div class="bg-gray-700 text-gray-300 rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm flex items-center gap-2">
+                <i class="fa-solid fa-spinner fa-spin text-blue-400"></i>
+                <span id="${statusId}-text">Working on your request...</span>
+            </div>
+        </div>
+    `);
+            scrollToBottom();
+
+            try {
+                const response = await fetch('/api/assistantAgent/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: messageText,
+                        student_id: studentId === 'guest' ? '' : studentId
+                    })
+                });
+
+                if (!response.ok) {
+                    document.getElementById(statusId).remove();
+                    appendAIMessage("Sorry, I'm having trouble connecting to the server right now.");
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let fullText = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split('\n\n');
+                    buffer = events.pop();
+
+                    for (const event of events) {
+                        if (!event.startsWith('data: ')) continue;
+                        const data = event.slice(6).trim();
+                        if (data === '[DONE]') break;
+
+                        const parsed = JSON.parse(data);
+
+                        // Update status text in place
+                        if (parsed.status) {
+                            document.getElementById(`${statusId}-text`).textContent = parsed.status;
+                            scrollToBottom();
+                        }
+
+                        // Silently accumulate tokens — nothing shown yet
+                        if (parsed.token) {
+                            fullText += parsed.token;
+                        }
+                    }
+                }
+
+                // Remove status bubble
+                document.getElementById(statusId).remove();
+
+                // Show full message all at once
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex items-end gap-2 mt-4';
+                const bubble = document.createElement('div');
+                bubble.className = 'bg-blue-600 text-white rounded-2xl rounded-bl-sm p-3 text-sm max-w-[85%] shadow-sm';
+                bubble.innerHTML = fullText;
+                wrapper.appendChild(bubble);
+                chatMessagesContainer.appendChild(wrapper);
+
+                scrollToBottom();
+                syncChatToStorage();
+
+            } catch (error) {
+                const statusEl = document.getElementById(statusId);
+                if (statusEl) statusEl.remove();
+                console.error('Error:', error);
+                appendAIMessage('Connection broke. Please try again.');
+            }
+        }
+
+        if (sendBtn) sendBtn.addEventListener('click', handleSendMessage);
+        if (chatInput) {
+            chatInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') handleSendMessage();
+            });
         }
     }
-
-    sendBtn.addEventListener('click', handleSendMessage);
-    chatInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') handleSendMessage();
-    });
 </script>
 </body>
 </html>
